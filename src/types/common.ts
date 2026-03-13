@@ -1,0 +1,24 @@
+// 通用类型
+export interface PaginationParams {
+  pageNum: number
+  pageSize: number
+}
+
+export interface ApiResponse<T = any> {
+  code: number
+  message: string
+  data: T
+}
+
+export interface PagedResult<T> {
+  list: T[]
+  total: number
+}
+
+// 状态类型
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+
+export interface SelectOption {
+  label: string
+  value: string | number
+}
