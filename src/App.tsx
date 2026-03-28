@@ -1,5 +1,10 @@
-import AppRouter from '@/router'
+import AppBootstrap from '@/features/auth/components/AppBootstrap'
+import AppRouter from '@/app/router'
 
 export default function App() {
-  return <AppRouter />
+  return (
+    <AppBootstrap>
+      <AppRouter />
+    </AppBootstrap>
+  )
 }

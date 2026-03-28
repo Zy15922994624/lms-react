@@ -1,0 +1,52 @@
+/* ── 登录页样式 (ll- 前缀) ── */
+
+.ll-root{min-height:100vh;display:flex;font-family:'Noto Sans SC',sans-serif;background:#fff9f5;overflow:hidden}
+.ll-left{flex:1;position:relative;background:linear-gradient(148deg,#ff6b35 0%,#ff9a3c 50%,#ffd166 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 3rem;overflow:hidden}
+@media(max-width:860px){.ll-left{display:none}}
+.ll-blob{position:absolute;border-radius:50%;pointer-events:none}
+.ll-blob-1{width:340px;height:340px;background:rgba(255,255,255,.12);top:-90px;right:-90px;animation:ll-drift 9s ease-in-out infinite}
+.ll-blob-2{width:210px;height:210px;background:rgba(255,255,255,.09);bottom:-40px;left:-40px;animation:ll-drift 12s ease-in-out infinite reverse}
+.ll-blob-3{width:140px;height:140px;background:rgba(6,182,212,.18);top:44%;right:10%;animation:ll-drift 7s ease-in-out infinite}
+@keyframes ll-drift{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(-16px,20px) rotate(8deg)}66%{transform:translate(12px,-12px) rotate(-5deg)}}
+.ll-icon{position:absolute;font-size:2rem;opacity:.5;pointer-events:none;user-select:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.1));animation:ll-float 6s ease-in-out infinite}
+.ll-icon:nth-child(1){top:10%;left:9%;font-size:2.8rem;animation-delay:0s;animation-duration:7s}
+.ll-icon:nth-child(2){top:20%;right:8%;font-size:1.8rem;animation-delay:1.2s;animation-duration:8s}
+.ll-icon:nth-child(3){top:62%;left:7%;font-size:2.2rem;animation-delay:.6s;animation-duration:9s}
+.ll-icon:nth-child(4){top:74%;right:10%;font-size:1.6rem;animation-delay:2s;animation-duration:6s}
+.ll-icon:nth-child(5){top:46%;left:4%;font-size:1.5rem;animation-delay:3s;animation-duration:10s}
+.ll-icon:nth-child(6){top:34%;right:14%;font-size:2rem;animation-delay:1.8s;animation-duration:7.5s}
+@keyframes ll-float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-18px) rotate(5deg)}}
+.ll-stripe{position:absolute;bottom:-50px;right:-50px;width:240px;height:240px;border:2.5px solid rgba(255,255,255,.18);border-radius:40px;transform:rotate(28deg);pointer-events:none}
+.ll-stripe2{position:absolute;top:-35px;left:-35px;width:170px;height:170px;border:2px solid rgba(255,255,255,.13);border-radius:30px;transform:rotate(-18deg);pointer-events:none}
+.ll-brand{position:relative;z-index:2;text-align:center;color:#fff}
+.ll-brand-emoji{display:block;font-size:5.5rem;margin-bottom:1rem;animation:ll-bounce 2.6s cubic-bezier(.36,.07,.19,.97) infinite;filter:drop-shadow(0 8px 20px rgba(0,0,0,.16))}
+@keyframes ll-bounce{0%,100%{transform:translateY(0) scale(1)}42%{transform:translateY(-14px) scale(1.06)}62%{transform:translateY(-7px) scale(1.02)}}
+.ll-brand-name{font-family:'Baloo 2',sans-serif;font-size:2.15rem;font-weight:800;line-height:1.2;text-shadow:0 2px 18px rgba(0,0,0,.13);margin-bottom:.7rem}
+.ll-brand-tag{display:inline-block;font-size:1rem;font-weight:500;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:.35rem 1.1rem;letter-spacing:.3px}
+.ll-pills{display:flex;flex-direction:column;gap:.7rem;margin-top:2.5rem;position:relative;z-index:2;width:100%;max-width:290px}
+.ll-pill{display:flex;align-items:center;gap:.6rem;background:rgba(255,255,255,.18);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:.6rem 1rem;color:#fff;font-size:.87rem;font-weight:600;animation:ll-slidein .5s cubic-bezier(.34,1.56,.64,1) both}
+.ll-pill:nth-child(2){animation-delay:.1s}
+.ll-pill:nth-child(3){animation-delay:.2s}
+.ll-dot{width:8px;height:8px;border-radius:50%;background:#ffd166;flex-shrink:0;box-shadow:0 0 6px rgba(255,209,102,.9)}
+@keyframes ll-slidein{from{opacity:0;transform:translateX(-22px)}to{opacity:1;transform:translateX(0)}}
+.ll-right{width:500px;display:flex;align-items:center;justify-content:center;padding:2rem;background:#fff9f5}
+@media(max-width:860px){.ll-right{width:100%}}
+.ll-card{width:100%;max-width:420px;background:#fff;border-radius:28px;box-shadow:0 0 0 1px rgba(255,107,53,.06),0 8px 24px rgba(255,107,53,.1),0 32px 64px rgba(0,0,0,.05);padding:2.5rem 2.25rem 2rem;animation:ll-cardin .55s cubic-bezier(.34,1.3,.64,1) both}
+@keyframes ll-cardin{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.ll-hi{font-family:'Baloo 2',sans-serif;font-size:1.75rem;font-weight:800;color:#1c1917;margin-bottom:.25rem}
+.ll-sub{font-size:.875rem;color:#78716c;margin-bottom:1.75rem}
+.ll-tabs{display:flex;gap:5px;background:#f5ede6;border-radius:16px;padding:5px;margin-bottom:1.75rem}
+.ll-tab{flex:1;border:none;background:transparent;border-radius:12px;padding:.5rem .2rem;cursor:pointer;font-size:.82rem;font-weight:700;color:#a8947f;font-family:'Noto Sans SC',sans-serif;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .22s cubic-bezier(.34,1.56,.64,1);line-height:1}
+.ll-tab:hover:not(.ll-tab-on){background:rgba(255,107,53,.08);color:#ff6b35}
+.ll-tab-on{background:#ff6b35;color:#fff;box-shadow:0 4px 14px rgba(255,107,53,.38);transform:scale(1.04) translateY(-1px)}
+.ll-form .ant-form-item{margin-bottom:1rem!important}
+.ll-form .ant-form-item-label>label{font-size:.78rem!important;font-weight:700!important;color:#6b5c52!important;text-transform:uppercase;letter-spacing:.3px}
+.ll-form .ant-input-affix-wrapper{border-radius:12px!important;border:1.5px solid #e7ddd6!important;background:#fdfaf7!important;padding:0 12px!important;transition:all .2s!important}
+.ll-form .ant-input-affix-wrapper:focus-within{border-color:#ff6b35!important;box-shadow:0 0 0 3px rgba(255,107,53,.14)!important;background:#fff!important}
+.ll-form .ant-input-affix-wrapper .ant-input{border:none!important;box-shadow:none!important;background:transparent!important;padding:10px 0!important;font-size:.935rem!important}
+.ll-form .ant-input:not(.ant-input-affix-wrapper .ant-input){border-radius:12px!important;border:1.5px solid #e7ddd6!important;background:#fdfaf7!important;padding:10px 12px!important;font-size:.935rem!important;transition:all .2s!important}
+.ll-form .ant-input:not(.ant-input-affix-wrapper .ant-input):focus{border-color:#ff6b35!important;box-shadow:0 0 0 3px rgba(255,107,53,.14)!important;background:#fff!important}
+.ll-btn{width:100%;height:50px!important;border-radius:14px!important;border:none!important;background:linear-gradient(135deg,#ff6b35 0%,#ff9a3c 100%)!important;box-shadow:0 4px 18px rgba(255,107,53,.38)!important;font-family:'Baloo 2',sans-serif!important;font-size:1.05rem!important;font-weight:800!important;letter-spacing:.5px;color:#fff!important;transition:transform .15s,box-shadow .15s!important;margin-top:.5rem}
+.ll-btn:hover{transform:translateY(-2px)!important;box-shadow:0 8px 26px rgba(255,107,53,.45)!important}
+.ll-btn:active{transform:translateY(0) scale(.98)!important;box-shadow:0 2px 10px rgba(255,107,53,.3)!important}
+.ll-footer{text-align:center;margin-top:1.25rem;font-size:.77rem;color:#c5b8b0}

@@ -1,0 +1,53 @@
+/* Ant Design 覆盖样式，与橙色主题保持一致 */
+
+/* 顶部导航栏 */
+.custom-header {
+  background: linear-gradient(135deg, #ff6b35 0%, #ff9a3c 100%);
+}
+
+/* 卡片悬浮效果 */
+.learning-card {
+  transition: all 0.3s ease;
+}
+
+.learning-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
+}
+
+/* 学习进度条样式 */
+.progress-custom .ant-progress-bg {
+  background: linear-gradient(90deg, #ff6b35 0%, #ffd166 100%);
+}
+
+/* Ant Design Message 全局提示 */
+.ant-message-notice-content {
+  border-radius: 10px !important;
+}
+
+/* Ant Design Modal 圆角 */
+.ant-modal-content {
+  border-radius: 16px !important;
+}
+
+/* Ant Design Drawer */
+.ant-drawer-content {
+  border-radius: 16px 0 0 16px !important;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5ede6;
+}
+::-webkit-scrollbar-thumb {
+  background: #e7ddd6;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff9a3c;
+}
+
