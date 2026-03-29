@@ -1,13 +1,95 @@
+const teacherMetrics = [
+  { label: '进行中课程', value: '12', hint: '含本周任务班级', tone: 'primary' },
+  { label: '待批改提交', value: '36', hint: '优先处理', tone: 'warning' },
+  { label: '本周通知', value: '8', hint: '课程公告', tone: 'neutral' },
+]
+
+const teacherAgenda = [
+  { title: '完成《Web 开发基础》任务批改', meta: '截止 18:00 · 共 18 份提交' },
+  { title: '发布《数据库设计》章节任务', meta: '二年级 3 班' },
+  { title: '检查两个课程空间的资源更新', meta: '避免学生端资料版本不一致' },
+]
+
+const teacherHighlights = [
+  { title: '本周重点', value: '4 门课程进入集中推进', note: '优先查看三年级课程安排' },
+  { title: '班级反馈', value: '2 个班级需要补充说明', note: '任务要求和评分标准待同步' },
+]
+
 export default function TeacherDashboardPage() {
   return (
-    <div className="rounded-[28px] border border-[rgba(28,25,23,0.08)] bg-white px-5 py-6 shadow-[0_18px_40px_rgba(28,25,23,0.06)] sm:px-6">
-      <div className="text-xs uppercase tracking-[0.2em] text-stone-400">Workspace</div>
-      <h1 className="mt-3 text-2xl font-semibold text-stone-900 sm:text-[28px]">
-        教学工作台
-      </h1>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600 sm:text-base">
-        这里会逐步承接课程概览、任务发布、批改提醒和班级动态，作为教师端的核心操作入口。
-      </p>
+    <div className="app-page">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_360px]">
+        <div className="app-panel px-6 py-6 sm:px-8 sm:py-8">
+          <div className="app-page-header">
+            <h1 className="app-page-title">教学工作台</h1>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {teacherMetrics.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-[24px] border border-[var(--lms-color-border)] bg-white/92 px-5 py-5 shadow-[0_12px_30px_rgba(28,25,23,0.05)]"
+              >
+                <div className="text-sm text-stone-500">{item.label}</div>
+                <div className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
+                  {item.value}
+                </div>
+                <div
+                  className={`mt-3 text-xs leading-5 ${
+                    item.tone === 'primary'
+                      ? 'text-orange-600'
+                      : item.tone === 'warning'
+                        ? 'text-amber-600'
+                        : 'text-stone-500'
+                  }`}
+                >
+                  {item.hint}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <aside className="app-panel bg-[linear-gradient(180deg,#fff4ec_0%,#fffdfb_100%)] px-5 py-5">
+          <div className="app-section-heading">
+            <h2 className="app-section-title">待处理事项</h2>
+          </div>
+
+          <div className="space-y-3">
+            {teacherAgenda.map((item, index) => (
+              <div
+                key={item.title}
+                className="rounded-[20px] border border-[rgba(28,25,23,0.06)] bg-white/92 px-4 py-4"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--lms-color-primary-soft)] text-sm font-semibold text-orange-600">
+                    {index + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium leading-6 text-stone-900">{item.title}</div>
+                    <div className="mt-1 text-xs leading-5 text-stone-500">{item.meta}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        {teacherHighlights.map((item) => (
+          <div
+            key={item.title}
+            className="app-panel px-6 py-5 sm:px-7"
+          >
+            <div className="text-sm font-medium text-stone-500">{item.title}</div>
+            <div className="mt-3 text-xl font-semibold tracking-[-0.02em] text-stone-900">
+              {item.value}
+            </div>
+            <div className="mt-2 text-sm leading-6 text-stone-500">{item.note}</div>
+          </div>
+        ))}
+      </section>
     </div>
   )
 }

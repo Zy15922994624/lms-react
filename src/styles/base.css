@@ -2,45 +2,78 @@
 @import 'tailwindcss';
 
 :root {
-  --lms-bg: #fffaf6;
-  --lms-surface: #ffffff;
-  --lms-surface-muted: #fff4ec;
-  --lms-primary: #ff6b35;
-  --lms-primary-soft: #ffefe6;
-  --lms-border: rgba(28, 25, 23, 0.08);
-  --lms-text: #1c1917;
-  --lms-text-secondary: #78716c;
-  --lms-shadow-soft: 0 18px 48px rgba(28, 25, 23, 0.08);
+  color-scheme: light;
+  --lms-font-family:
+    'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --lms-color-primary: #ff6b35;
+  --lms-color-primary-hover: #ff9a3c;
+  --lms-color-primary-active: #e85a25;
+  --lms-color-primary-soft: #ffefe6;
+  --lms-color-primary-surface: #fff4ec;
+
+  --lms-color-bg: #fffaf6;
+  --lms-color-bg-elevated: rgba(255, 255, 255, 0.92);
+  --lms-color-surface: #ffffff;
+  --lms-color-surface-muted: #fff8f3;
+  --lms-color-surface-strong: #fff1e7;
+  --lms-color-border: rgba(28, 25, 23, 0.08);
+  --lms-color-border-strong: rgba(28, 25, 23, 0.14);
+
+  --lms-color-text: #1c1917;
+  --lms-color-text-secondary: #78716c;
+  --lms-color-text-tertiary: #a8a29e;
+
+  --lms-radius-xs: 6px;
+  --lms-radius-sm: 10px;
+  --lms-radius-md: 14px;
+  --lms-radius-lg: 20px;
+  --lms-radius-xl: 28px;
+
+  --lms-shadow-soft: 0 2px 12px rgba(28, 25, 23, 0.06);
+  --lms-shadow-card: 0 18px 48px rgba(28, 25, 23, 0.08);
   --lms-shadow-focus: 0 0 0 3px rgba(255, 107, 53, 0.14);
+
+  --lms-space-2: 8px;
+  --lms-space-3: 12px;
+  --lms-space-4: 16px;
+  --lms-space-5: 20px;
+  --lms-space-6: 24px;
+  --lms-space-8: 32px;
+
+  --lms-layout-header-height: 72px;
+  --lms-layout-content-max-width: 1440px;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 html,
 body,
 #root {
-  height: 100%;
   width: 100%;
+  min-height: 100%;
 }
 
 html {
-  background: var(--lms-bg);
+  background: var(--lms-color-bg);
 }
 
 body {
   min-width: 320px;
+  margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(255, 154, 60, 0.12), transparent 26%),
+    radial-gradient(circle at top left, rgba(255, 154, 60, 0.12), transparent 24%),
     radial-gradient(circle at bottom right, rgba(255, 107, 53, 0.08), transparent 22%),
-    var(--lms-bg);
-  color: var(--lms-text);
-  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    var(--lms-color-bg);
+  color: var(--lms-color-text);
+  font-family: var(--lms-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -48,4 +81,90 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-content-scroll {
+  height: calc(100vh - var(--lms-layout-header-height));
+  overflow-y: auto;
+  padding: var(--lms-space-4);
+}
+
+.app-content-container {
+  width: 100%;
+  max-width: var(--lms-layout-content-max-width);
+  margin: 0 auto;
+}
+
+.app-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lms-space-6);
+}
+
+.app-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lms-space-3);
+}
+
+.app-page-title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--lms-color-text);
+}
+
+.app-panel {
+  background: var(--lms-color-bg-elevated);
+  border: 1px solid var(--lms-color-border);
+  border-radius: var(--lms-radius-xl);
+  box-shadow: var(--lms-shadow-card);
+  backdrop-filter: blur(14px);
+}
+
+.app-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lms-space-2);
+  margin-bottom: var(--lms-space-5);
+}
+
+.app-section-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--lms-color-text);
+}
+
+.app-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--lms-color-primary);
+}
+
+@media (min-width: 768px) {
+  .app-content-scroll {
+    padding: var(--lms-space-6);
+  }
+
+  .app-page {
+    gap: var(--lms-space-8);
+  }
 }

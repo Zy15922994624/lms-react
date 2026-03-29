@@ -1,53 +1,54 @@
-/* Ant Design 覆盖样式，与橙色主题保持一致 */
+/* Ant Design 与 LMS 设计令牌对齐 */
 
-/* 顶部导航栏 */
-.custom-header {
-  background: linear-gradient(135deg, #ff6b35 0%, #ff9a3c 100%);
+.ant-message {
+  top: 24px !important;
 }
 
-/* 卡片悬浮效果 */
-.learning-card {
-  transition: all 0.3s ease;
-}
-
-.learning-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
-}
-
-/* 学习进度条样式 */
-.progress-custom .ant-progress-bg {
-  background: linear-gradient(90deg, #ff6b35 0%, #ffd166 100%);
-}
-
-/* Ant Design Message 全局提示 */
-.ant-message-notice-content {
-  border-radius: 10px !important;
-}
-
-/* Ant Design Modal 圆角 */
+.ant-message-notice-content,
+.ant-notification-notice,
 .ant-modal-content {
-  border-radius: 16px !important;
+  border-radius: var(--lms-radius-md) !important;
 }
 
-/* Ant Design Drawer */
 .ant-drawer-content {
-  border-radius: 16px 0 0 16px !important;
+  border-radius: 20px 0 0 20px !important;
 }
 
-/* 滚动条美化 */
+.ant-menu-inline,
+.ant-menu-light {
+  border-inline-end: none !important;
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title {
+  min-height: 44px;
+}
+
+.ant-card {
+  box-shadow: none;
+}
+
+.ant-input-affix-wrapper:focus-within,
+.ant-input:focus,
+.ant-input-number:focus-within,
+.ant-select-focused .ant-select-selector {
+  box-shadow: var(--lms-shadow-focus) !important;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #f5ede6;
+  background: rgba(245, 237, 230, 0.7);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #e7ddd6;
+  background: rgba(28, 25, 23, 0.14);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #ff9a3c;
-}
 
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 53, 0.58);
+}

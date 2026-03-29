@@ -15,7 +15,6 @@ export interface PagedResult<T> {
   total: number
 }
 
-// 状态类型
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
 export interface SelectOption {

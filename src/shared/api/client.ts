@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import { message } from 'antd'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { uiMessage } from '@/shared/components/feedback/message'
 import type { ApiResponse } from '@/shared/types/common'
 
 declare module 'axios' {
@@ -58,7 +58,7 @@ client.interceptors.response.use(
         ? '请求超时，请稍后重试'
         : '网络连接失败，请检查网络设置'
 
-      message.error(errorText)
+      uiMessage.error(errorText)
       return Promise.reject(error)
     }
 
@@ -68,25 +68,25 @@ client.interceptors.response.use(
     switch (status) {
       case 401:
         useAuthStore.getState().logout()
-        message.error(errorMessage || '登录已过期，请重新登录')
+        uiMessage.error(errorMessage || '登录已过期，请重新登录')
         break
       case 403:
-        message.error(errorMessage || '权限不足，无法执行此操作')
+        uiMessage.error(errorMessage || '权限不足，无法执行此操作')
         break
       case 404:
-        message.error(errorMessage || '请求的资源不存在')
+        uiMessage.error(errorMessage || '请求的资源不存在')
         break
       case 409:
-        message.error(errorMessage || '操作冲突，请检查后重试')
+        uiMessage.error(errorMessage || '操作冲突，请检查后重试')
         break
       case 500:
       case 502:
       case 503:
       case 504:
-        message.error(errorMessage || '服务器异常，请稍后再试')
+        uiMessage.error(errorMessage || '服务器异常，请稍后再试')
         break
       default:
-        message.error(errorMessage)
+        uiMessage.error(errorMessage)
     }
 
     return Promise.reject(error)

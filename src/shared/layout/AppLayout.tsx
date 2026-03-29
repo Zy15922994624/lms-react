@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, Typography, message } from 'antd'
+import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, Typography } from 'antd'
 import {
   BookOutlined,
   CheckSquareOutlined,
@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { uiMessage } from '@/shared/components/feedback/message'
 import type { UserRole } from '@/shared/types/user'
 
 const { Content, Header, Sider } = Layout
@@ -19,6 +20,12 @@ const roleText: Record<UserRole, string> = {
   admin: '管理员',
   teacher: '教师',
   student: '学生',
+}
+
+const roleWorkspaceText: Record<UserRole, string> = {
+  admin: '系统工作台',
+  teacher: '教学工作台',
+  student: '学习工作台',
 }
 
 const menuKeyToRoute: Record<string, string> = {
@@ -42,26 +49,30 @@ export default function AppLayout() {
   const isDesktop = Boolean(screens.lg)
   const selectedKey = location.pathname.split('/')[1] || 'dashboard'
 
-  const menuItems = [
-    hasRole(['student'])
-      ? { key: 'dashboard', icon: <DashboardOutlined />, label: '学习概览' }
-      : null,
-    hasRole(['teacher', 'admin'])
-      ? { key: 'teacher-home', icon: <DashboardOutlined />, label: '教学工作台' }
-      : null,
-    hasRole(['teacher', 'student'])
-      ? { key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' }
-      : null,
-    hasRole(['teacher', 'student'])
-      ? { key: 'courses', icon: <BookOutlined />, label: '课程空间' }
-      : null,
-    hasRole(['teacher'])
-      ? { key: 'question-bank', icon: <BookOutlined />, label: '题库管理' }
-      : null,
-    hasRole(['admin'])
-      ? { key: 'users', icon: <UserOutlined />, label: '用户管理' }
-      : null,
-  ].filter(Boolean)
+  const menuItems = useMemo(
+    () =>
+      [
+        hasRole(['student'])
+          ? { key: 'dashboard', icon: <DashboardOutlined />, label: '学习总览' }
+          : null,
+        hasRole(['teacher', 'admin'])
+          ? { key: 'teacher-home', icon: <DashboardOutlined />, label: '教学工作台' }
+          : null,
+        hasRole(['teacher', 'student'])
+          ? { key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' }
+          : null,
+        hasRole(['teacher', 'student'])
+          ? { key: 'courses', icon: <BookOutlined />, label: '课程空间' }
+          : null,
+        hasRole(['teacher'])
+          ? { key: 'question-bank', icon: <BookOutlined />, label: '题库管理' }
+          : null,
+        hasRole(['admin'])
+          ? { key: 'users', icon: <UserOutlined />, label: '用户管理' }
+          : null,
+      ].filter(Boolean),
+    [hasRole],
+  )
 
   const userMenuItems = [
     { key: 'profile', label: '个人资料' },
@@ -72,7 +83,7 @@ export default function AppLayout() {
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === 'logout') {
       logout()
-      message.success('已退出登录')
+      uiMessage.success('已退出登录')
       navigate(ROUTES.LOGIN, { replace: true })
       return
     }
@@ -86,21 +97,20 @@ export default function AppLayout() {
 
   const menuNode = (
     <div className="flex h-full flex-col bg-[linear-gradient(180deg,#fffaf7_0%,#fffdfb_100%)]">
-      <div className="flex items-center gap-3 border-b border-[rgba(28,25,23,0.08)] px-5 py-5">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ff6b35_0%,#ff9a3c_100%)] text-xl font-bold text-white shadow-[0_10px_24px_rgba(255,107,53,0.24)]">
-          学
-        </div>
-        <div>
-          <Typography.Text strong className="block text-[15px] text-stone-900">
-            LMS 学习任务系统
-          </Typography.Text>
-          <Typography.Text className="text-xs text-stone-500">
-            课程、任务与反馈协同工作台
-          </Typography.Text>
+      <div className="flex h-[var(--lms-layout-header-height)] items-center border-b border-[var(--lms-color-border)] px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#ff6b35_0%,#ff9a3c_100%)] text-xl font-bold text-white shadow-[0_10px_24px_rgba(255,107,53,0.24)]">
+            L
+          </div>
+          <div className="min-w-0">
+            <Typography.Text strong className="block text-[15px] text-stone-900">
+              LMS 学习任务系统
+            </Typography.Text>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 px-3 py-4">
+      <div className="flex-1 px-3 py-5">
         <Menu
           mode="inline"
           theme="light"
@@ -111,27 +121,32 @@ export default function AppLayout() {
         />
       </div>
 
-      <div className="mx-4 mb-4 rounded-3xl border border-[rgba(255,107,53,0.12)] bg-white/85 px-4 py-4 shadow-[0_16px_40px_rgba(28,25,23,0.06)]">
-        <div className="text-xs uppercase tracking-[0.18em] text-stone-400">当前身份</div>
-        <div className="mt-2 text-sm font-semibold text-stone-900">
-          {role ? roleText[role] : '未登录'}
-        </div>
-        <div className="mt-1 text-xs leading-5 text-stone-500">
-          后续会在这里接入课程提醒、任务统计和角色快捷入口。
+      <div className="px-4 pb-4">
+        <div className="rounded-[24px] border border-[rgba(255,107,53,0.12)] bg-white/92 px-4 py-4 shadow-[0_16px_36px_rgba(28,25,23,0.05)]">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+            <span className="app-status-dot" />
+            当前身份
+          </div>
+          <div className="mt-3 text-base font-semibold text-stone-900">
+            {role ? roleText[role] : '未登录'}
+          </div>
+          <div className="mt-1 text-sm text-stone-500">
+            {role ? roleWorkspaceText[role] : '请先登录'}
+          </div>
         </div>
       </div>
     </div>
   )
 
   return (
-    <Layout className="min-h-screen bg-[#fffaf6]">
+    <Layout className="app-shell">
       {isDesktop ? (
         <Sider
-          width={288}
+          width={280}
           theme="light"
           style={{
             background: 'transparent',
-            borderRight: '1px solid rgba(28,25,23,0.08)',
+            borderRight: '1px solid var(--lms-color-border)',
           }}
         >
           {menuNode}
@@ -139,7 +154,7 @@ export default function AppLayout() {
       ) : (
         <Drawer
           placement="left"
-          width={304}
+          size="default"
           open={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           closable={false}
@@ -152,31 +167,30 @@ export default function AppLayout() {
       <Layout>
         <Header
           style={{
-            height: 72,
+            height: 'var(--lms-layout-header-height)',
             padding: 0,
-            background: 'rgba(255,250,246,0.88)',
-            borderBottom: '1px solid rgba(28,25,23,0.08)',
+            background: 'rgba(255,250,246,0.9)',
+            borderBottom: '1px solid var(--lms-color-border)',
             backdropFilter: 'blur(16px)',
           }}
         >
-          <div className="flex h-full items-center justify-between px-4 sm:px-6">
+          <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
             <div className="flex items-center gap-3">
               {!isDesktop ? (
                 <button
                   type="button"
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(28,25,23,0.08)] bg-white text-stone-700 shadow-[0_10px_24px_rgba(28,25,23,0.06)]"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--lms-color-border)] bg-white text-stone-700 shadow-[0_10px_24px_rgba(28,25,23,0.06)]"
                   onClick={() => setMobileMenuOpen(true)}
                   aria-label="打开菜单"
                 >
                   <MenuOutlined />
                 </button>
               ) : null}
-              <div>
-                <div className="text-xs uppercase tracking-[0.22em] text-stone-400">
-                  Workspace
-                </div>
-                <div className="text-base font-semibold text-stone-900 sm:text-lg">
-                  {role === 'teacher' || role === 'admin' ? '教学工作台' : '学习工作台'}
+
+              <div className="flex items-center gap-3">
+                <span className="hidden h-8 w-px bg-[var(--lms-color-border)] sm:block" />
+                <div className="text-lg font-semibold tracking-[-0.02em] text-stone-900">
+                  {role ? roleWorkspaceText[role] : '学习工作台'}
                 </div>
               </div>
             </div>
@@ -184,14 +198,18 @@ export default function AppLayout() {
             <Dropdown menu={{ items: userMenuItems, onClick: handleMenuClick }} trigger={['click']}>
               <button
                 type="button"
-                className="flex items-center gap-3 rounded-2xl border border-[rgba(28,25,23,0.08)] bg-white px-2 py-2 text-left shadow-[0_12px_30px_rgba(28,25,23,0.06)]"
+                className="flex items-center gap-3 rounded-[20px] border border-[var(--lms-color-border)] bg-white/95 px-2 py-2 text-left shadow-[0_12px_30px_rgba(28,25,23,0.06)] transition hover:border-[rgba(255,107,53,0.18)] hover:shadow-[0_14px_34px_rgba(28,25,23,0.08)]"
               >
-                <Avatar size={40} src={currentUser?.avatar} icon={<UserOutlined />} />
+                <Avatar
+                  size={40}
+                  src={currentUser?.avatar ? currentUser.avatar : undefined}
+                  icon={<UserOutlined />}
+                />
                 <div className="hidden sm:block">
                   <div className="text-sm font-medium text-stone-900">
                     {currentUser?.fullName || currentUser?.username || '用户'}
                   </div>
-                  <div className="text-xs text-stone-500">{role ? roleText[role] : ''}</div>
+                  <div className="text-xs text-stone-500">{role ? roleText[role] : '访客'}</div>
                 </div>
               </button>
             </Dropdown>
@@ -199,8 +217,8 @@ export default function AppLayout() {
         </Header>
 
         <Content className="overflow-hidden">
-          <div className="h-[calc(100vh-72px)] overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-            <div className="mx-auto min-h-full w-full max-w-[1440px]">
+          <div className="app-content-scroll">
+            <div className="app-content-container">
               <Outlet />
             </div>
           </div>

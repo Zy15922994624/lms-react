@@ -8,6 +8,7 @@ import App from './App'
 import theme from './app/theme/antdTheme'
 import { queryClient } from '@/app/providers/queryClient'
 import ErrorBoundary from './shared/components/feedback/ErrorBoundary'
+import AntdAppBridge from './shared/components/feedback/AntdAppBridge'
 import './styles/index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -16,7 +17,13 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <ConfigProvider theme={theme} locale={zhCN}>
           <AntdApp>
-            <BrowserRouter>
+            <AntdAppBridge />
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
               <App />
             </BrowserRouter>
           </AntdApp>
