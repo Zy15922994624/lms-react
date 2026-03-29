@@ -61,7 +61,7 @@ export default function AppLayout() {
         hasRole(['teacher', 'student'])
           ? { key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' }
           : null,
-        hasRole(['teacher', 'student'])
+        hasRole(['teacher', 'student', 'admin'])
           ? { key: 'courses', icon: <BookOutlined />, label: '课程空间' }
           : null,
         hasRole(['teacher'])
@@ -110,7 +110,7 @@ export default function AppLayout() {
         </div>
       </div>
 
-      <div className="flex-1 px-3 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
         <Menu
           mode="inline"
           theme="light"
@@ -145,8 +145,14 @@ export default function AppLayout() {
           width={280}
           theme="light"
           style={{
+            height: '100vh',
             background: 'transparent',
             borderRight: '1px solid var(--lms-color-border)',
+            overflow: 'hidden',
+            flex: '0 0 280px',
+            maxWidth: 280,
+            minWidth: 280,
+            width: 280,
           }}
         >
           {menuNode}
@@ -174,7 +180,7 @@ export default function AppLayout() {
             backdropFilter: 'blur(16px)',
           }}
         >
-          <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex h-full w-full items-center justify-between gap-4 px-4 sm:px-6">
             <div className="flex items-center gap-3">
               {!isDesktop ? (
                 <button

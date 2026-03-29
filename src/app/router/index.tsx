@@ -4,6 +4,11 @@ import { ROUTES, getRoleHomePath } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import StudentDashboardPage from '@/features/dashboard/pages/StudentDashboardPage'
 import TeacherDashboardPage from '@/features/dashboard/pages/TeacherDashboardPage'
+import CoursesPage from '@/features/courses/pages/CoursesPage'
+import CourseOverviewPage from '@/features/courses/pages/CourseOverviewPage'
+import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
+import CourseResourcesPage from '@/features/courses/pages/CourseResourcesPage'
+import CourseDiscussionsPage from '@/features/courses/pages/CourseDiscussionsPage'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '@/shared/layout/AppLayout'
 import PageLoading from '@/shared/components/feedback/PageLoading'
@@ -47,6 +52,46 @@ export default function AppRouter() {
             element={
               <ProtectedRoute>
                 <StudentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="courses"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <CoursesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="courses/:courseId"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <CourseOverviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="courses/:courseId/members"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <CourseMembersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="courses/:courseId/resources"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <CourseResourcesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="courses/:courseId/discussions"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <CourseDiscussionsPage />
               </ProtectedRoute>
             }
           />
