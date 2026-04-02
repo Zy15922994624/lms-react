@@ -24,10 +24,11 @@ export default function CoursesPage() {
   const [currentCourse, setCurrentCourse] = useState<CourseDetail | CourseSummary | null>(null)
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState<CourseSummary | null>(null)
 
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: coursesPage, isLoading } = useQuery({
     queryKey: ['courses'],
-    queryFn: () => courseService.getCourses(true),
+    queryFn: () => courseService.getCourses(true, 1, 100),
   })
+  const courses = coursesPage?.items ?? []
 
   const createCourseMutation = useMutation({
     mutationFn: (values: CourseFormValues) => courseService.createCourse(values),

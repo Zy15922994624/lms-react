@@ -1,11 +1,11 @@
 import client from '@/shared/api/client'
-import type { CourseDetail, CourseFormValues, CourseMembersPage, CourseSummary } from '@/features/courses/types/course'
+import type { CourseDetail, CourseFormValues, CourseMembersPage, CoursesPage } from '@/features/courses/types/course'
 
 export const courseService = {
-  async getCourses(includeArchived = true) {
-    return (await client.get<CourseSummary[]>('/courses', {
-      params: { includeArchived },
-    })) as unknown as CourseSummary[]
+  async getCourses(includeArchived = true, page = 1, pageSize = 10) {
+    return (await client.get<CoursesPage>('/courses', {
+      params: { includeArchived, page, pageSize },
+    })) as unknown as CoursesPage
   },
 
   async getCourseById(courseId: string) {

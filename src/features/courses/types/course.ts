@@ -19,6 +19,11 @@ export interface CourseSummary {
 
 export type CourseDetail = CourseSummary
 
+export interface CoursesPage {
+  items: CourseSummary[]
+  total: number
+}
+
 export interface CourseMemberUser {
   id: string
   username: string
