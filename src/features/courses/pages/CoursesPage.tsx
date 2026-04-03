@@ -11,6 +11,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 
 type FilterValue = 'all' | 'active' | 'archived'
+const EMPTY_COURSES: CourseSummary[] = []
 
 export default function CoursesPage() {
   const navigate = useNavigate()
@@ -28,7 +29,7 @@ export default function CoursesPage() {
     queryKey: ['courses'],
     queryFn: () => courseService.getCourses(true, 1, 100),
   })
-  const courses = coursesPage?.items ?? []
+  const courses = useMemo(() => coursesPage?.items ?? EMPTY_COURSES, [coursesPage])
 
   const createCourseMutation = useMutation({
     mutationFn: (values: CourseFormValues) => courseService.createCourse(values),
@@ -120,15 +121,15 @@ export default function CoursesPage() {
     setFormOpen(true)
   }
 
-  const submitForm = (values: CourseFormValues) => {
+  const submitForm = async (values: CourseFormValues) => {
     if (formMode === 'create') {
-      createCourseMutation.mutate(values)
+      await createCourseMutation.mutateAsync(values)
       return
     }
 
     if (!currentCourse) return
 
-    updateCourseMutation.mutate({
+    await updateCourseMutation.mutateAsync({
       courseId: currentCourse.id,
       values,
     })

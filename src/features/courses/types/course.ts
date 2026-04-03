@@ -52,6 +52,7 @@ export interface CourseFormValues {
   title: string
   description?: string
   courseCode?: string
+  coverImage?: string
   semester?: string
   credits?: number
   maxStudents?: number | null

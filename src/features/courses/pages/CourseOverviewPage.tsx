@@ -7,7 +7,7 @@ import { MoreOutlined } from '@ant-design/icons'
 import CourseWorkspaceFrame from '@/features/courses/components/CourseWorkspaceFrame'
 import CourseFormModal from '@/features/courses/components/CourseFormModal'
 import { courseService } from '@/features/courses/services/course.service'
-import type { CourseFormValues } from '@/features/courses/types/course'
+import type { CourseDetail, CourseFormValues, CoursesPage } from '@/features/courses/types/course'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { ROUTES } from '@/shared/constants/routes'
 import PageLoading from '@/shared/components/feedback/PageLoading'
@@ -28,18 +28,27 @@ export default function CourseOverviewPage() {
     enabled: Boolean(courseId),
   })
 
+  const syncCourseCaches = (updatedCourse: CourseDetail) => {
+    queryClient.setQueryData<CourseDetail>(['course', courseId], updatedCourse)
+    queryClient.setQueryData<CoursesPage>(['courses'], (previous) => {
+      if (!previous) return previous
+
+      return {
+        ...previous,
+        items: previous.items.map((item) => (item.id === updatedCourse.id ? updatedCourse : item)),
+      }
+    })
+  }
+
   const updateCourseMutation = useMutation({
     mutationFn: (values: CourseFormValues) => courseService.updateCourse(courseId, values),
-    onSuccess: async () => {
+    onSuccess: async (updatedCourse) => {
       uiMessage.success('课程更新成功')
       setIsEditModalOpen(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
-      ])
+      syncCourseCaches(updatedCourse)
     },
     onError: () => {
-      uiMessage.error('更新课程失败')
+      uiMessage.error('课程更新失败')
     },
   })
 
@@ -160,7 +169,7 @@ export default function CourseOverviewPage() {
         loading={updateCourseMutation.isPending}
         initialValues={course}
         onCancel={() => setIsEditModalOpen(false)}
-        onSubmit={(values) => updateCourseMutation.mutate(values)}
+        onSubmit={(values) => updateCourseMutation.mutateAsync(values)}
       />
 
       <Modal
