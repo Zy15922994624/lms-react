@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Dropdown, Empty, Modal, Segmented } from 'antd'
 import type { MenuProps } from 'antd'
@@ -9,6 +9,8 @@ import { courseService } from '@/features/courses/services/course.service'
 import type { CourseDetail, CourseFormValues, CourseSummary } from '@/features/courses/types/course'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
+import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 
 type FilterValue = 'all' | 'active' | 'archived'
 const EMPTY_COURSES: CourseSummary[] = []
@@ -158,90 +160,89 @@ export default function CoursesPage() {
     },
   ]
 
+  const focusAside = (
+    <div className={`app-panel ${workspacePanelPadding.asideWarm}`}>
+      <div className="app-section-heading">
+        <h2 className="app-section-title">优先查看</h2>
+      </div>
+      <div className="space-y-3">
+        {focusCourses.map((course) => (
+          <button
+            type="button"
+            key={course.id}
+            onClick={() => navigate(`/courses/${course.id}`)}
+            className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
+          >
+            <div className="text-sm font-medium leading-6 text-stone-900">{course.title}</div>
+            <div className="mt-1 text-xs leading-5 text-stone-500">
+              {course.teacherName} · {course.studentCount} 名成员 · {course.taskCount} 个任务
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="app-page">
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_320px]">
-        <div className="app-panel px-6 py-6 sm:px-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                课程空间
-              </div>
-              <h1 className="mt-3 text-[clamp(28px,3.8vw,40px)] font-semibold tracking-[-0.04em] text-stone-900">
-                查看课程、成员与任务概况
-              </h1>
+      <WorkspaceLayout
+        preset="dashboard"
+        aside={focusAside}
+        mainClassName={`app-panel ${workspacePanelPadding.section}`}
+      >
+        <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
+              课程空间
             </div>
-
-            <div className="flex w-full max-w-[320px] flex-col gap-3 rounded-[24px] border border-[rgba(255,107,53,0.1)] bg-[linear-gradient(180deg,#fff5ed_0%,#ffffff_100%)] p-4">
-              <Segmented
-                block
-                value={filter}
-                onChange={(value) => setFilter(value as FilterValue)}
-                options={[
-                  { label: '全部', value: 'all' },
-                  { label: '进行中', value: 'active' },
-                  { label: '已归档', value: 'archived' },
-                ]}
-              />
-              {canManageCourses ? (
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<PlusOutlined />}
-                  onClick={openCreateModal}
-                >
-                  创建课程
-                </Button>
-              ) : null}
-            </div>
+            <h1 className="mt-3 max-w-4xl text-[clamp(28px,3vw,44px)] font-semibold tracking-[-0.04em] text-stone-900">
+              查看课程、成员与任务概况
+            </h1>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {isLoading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[118px] rounded-[24px] border border-[var(--lms-color-border)] bg-white/70"
-                  />
-                ))
-              : metrics.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-[24px] border border-[var(--lms-color-border)] bg-white/92 px-5 py-5 shadow-[0_12px_30px_rgba(28,25,23,0.05)]"
-                  >
-                    <div className="text-sm text-stone-500">{item.label}</div>
-                    <div className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
+          <div className="flex w-full flex-col gap-3 rounded-[24px] border border-[rgba(255,107,53,0.1)] bg-[linear-gradient(180deg,#fff5ed_0%,#ffffff_100%)] p-4 2xl:w-[340px] 2xl:min-w-[320px] 2xl:max-w-[360px]">
+            <Segmented
+              block
+              value={filter}
+              onChange={(value) => setFilter(value as FilterValue)}
+              options={[
+                { label: '全部', value: 'all' },
+                { label: '进行中', value: 'active' },
+                { label: '已归档', value: 'archived' },
+              ]}
+            />
+            {canManageCourses ? (
+              <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreateModal}>
+                创建课程
+              </Button>
+            ) : null}
           </div>
         </div>
 
-        <aside className="app-panel bg-[linear-gradient(180deg,#fff4ec_0%,#fffdfb_100%)] px-5 py-5">
-          <div className="app-section-heading">
-            <h2 className="app-section-title">优先查看</h2>
-          </div>
-          <div className="space-y-3">
-            {focusCourses.map((course) => (
-              <button
-                type="button"
-                key={course.id}
-                onClick={() => navigate(`/courses/${course.id}`)}
-                className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
-              >
-                <div className="text-sm font-medium leading-6 text-stone-900">{course.title}</div>
-                <div className="mt-1 text-xs leading-5 text-stone-500">
-                  {course.teacherName} · {course.studentCount} 名成员 · {course.taskCount} 个任务
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-5">
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-[118px] rounded-[24px] border border-[var(--lms-color-border)] bg-white/70"
+                />
+              ))
+            : metrics.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-[24px] border border-[var(--lms-color-border)] bg-white/92 px-5 py-5 shadow-[0_12px_30px_rgba(28,25,23,0.05)]"
+                >
+                  <div className="text-sm text-stone-500">{item.label}</div>
+                  <div className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
+                    {item.value}
+                  </div>
                 </div>
-              </button>
-            ))}
-          </div>
-        </aside>
-      </section>
+              ))}
+        </div>
+      </WorkspaceLayout>
 
       <section className="app-panel overflow-hidden">
-        <div className="border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8">
+        <div className={workspacePanelPadding.blockHeader}>
           <h2 className="text-xl font-semibold tracking-[-0.02em] text-stone-900">课程列表</h2>
         </div>
 
@@ -264,7 +265,7 @@ export default function CoursesPage() {
                   navigate(`/courses/${course.id}`)
                 }
               }}
-              className="group grid cursor-pointer gap-6 px-6 py-6 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.95fr)]"
+              className="group grid cursor-pointer gap-6 px-6 py-6 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)] 2xl:grid-cols-[minmax(0,1.78fr)_minmax(420px,1.08fr)] 2xl:px-10 2xl:py-7"
             >
               <div className="min-w-0">
                 <div className="flex items-start justify-between gap-4">
@@ -296,10 +297,7 @@ export default function CoursesPage() {
                   </div>
 
                   {canManageCourses ? (
-                    <div
-                      onClick={(event) => event.stopPropagation()}
-                      onKeyDown={(event) => event.stopPropagation()}
-                    >
+                    <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                       <Dropdown menu={{ items: actionItems(course) }} trigger={['click']}>
                         <Button
                           icon={<MoreOutlined />}
@@ -312,12 +310,12 @@ export default function CoursesPage() {
                   ) : null}
                 </div>
 
-                <div className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">
+                <div className="mt-2 max-w-3xl line-clamp-2 text-sm leading-6 text-stone-500 2xl:max-w-4xl">
                   {course.description || '暂无课程说明'}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-sm text-stone-500 sm:grid-cols-4 lg:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 text-sm text-stone-500 sm:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4 2xl:gap-4">
                 <div>
                   <div className="text-xs uppercase tracking-[0.16em] text-stone-400">教师</div>
                   <div className="mt-2 font-medium text-stone-900">{course.teacherName}</div>

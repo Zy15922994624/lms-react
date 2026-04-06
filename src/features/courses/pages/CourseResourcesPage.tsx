@@ -25,6 +25,8 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import { ROUTES } from '@/shared/constants/routes'
+import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 import { formatDateTime } from '@/shared/utils/date'
 
 type ResourceTypeFilter = CourseResourceType | 'all'
@@ -487,20 +489,20 @@ export default function CourseResourcesPage() {
         ) : null
       }
     >
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_380px]">
+      <WorkspaceLayout preset="resource" aside={renderPreviewPanel()}>
         <div className="app-panel overflow-hidden">
-          <div className="border-b border-[var(--lms-color-border)] px-6 py-6 sm:px-8">
-            <div className="max-w-2xl">
+          <div className={`border-b border-[var(--lms-color-border)] ${workspacePanelPadding.section}`}>
+            <div className="max-w-3xl">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
                 课程资源
               </div>
-              <h2 className="mt-3 text-[clamp(28px,3vw,36px)] font-semibold tracking-[-0.04em] text-stone-900">
+              <h2 className="mt-3 text-[clamp(28px,2.4vw,40px)] font-semibold tracking-[-0.04em] text-stone-900">
                 资源工作台
               </h2>
               <p className="mt-3 text-sm leading-7 text-stone-500">{highlightedSummary}</p>
             </div>
 
-            <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px]">
+            <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px] 2xl:grid-cols-[minmax(0,1fr)_200px_200px]">
               <Input.Search
                 allowClear
                 placeholder="搜索标题、说明或文件名"
@@ -578,7 +580,7 @@ export default function CourseResourcesPage() {
                         }
                       }}
                       className={[
-                        'group cursor-pointer px-6 py-5 transition duration-200 sm:px-8',
+                        'group cursor-pointer px-6 py-5 transition duration-200 sm:px-8 2xl:px-10 2xl:py-6',
                         isSelected
                           ? 'bg-[linear-gradient(180deg,#fff8f3_0%,#fffdfb_100%)]'
                           : 'hover:bg-[rgba(255,247,242,0.78)]',
@@ -595,7 +597,7 @@ export default function CourseResourcesPage() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between 2xl:gap-6">
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="truncate text-lg font-semibold tracking-[-0.02em] text-stone-900">
@@ -621,7 +623,7 @@ export default function CourseResourcesPage() {
 
                             <div
                               className={[
-                                'flex shrink-0 flex-wrap items-center gap-2 transition xl:justify-end',
+                                'flex shrink-0 flex-wrap items-center gap-2 transition xl:justify-end 2xl:min-w-[240px]',
                                 isSelected
                                   ? 'opacity-100'
                                   : 'opacity-100 xl:translate-y-1 xl:opacity-0 xl:group-hover:translate-y-0 xl:group-hover:opacity-100',
@@ -727,8 +729,7 @@ export default function CourseResourcesPage() {
           ) : null}
         </div>
 
-        <aside className="xl:sticky xl:top-6 xl:self-start">{renderPreviewPanel()}</aside>
-      </section>
+        </WorkspaceLayout>
 
       <CourseResourceFormModal
         open={isCreateModalOpen}
@@ -778,7 +779,7 @@ export default function CourseResourcesPage() {
               src={selectedResource.fileUrl}
               alt={selectedResource.title}
               draggable={false}
-              className="max-h-[85vh] max-w-[min(92vw,1280px)] object-contain select-none"
+              className="max-h-[85vh] max-w-[min(92vw,1520px)] object-contain select-none"
               style={{
                 transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageScale})`,
                 transformOrigin: 'center center',

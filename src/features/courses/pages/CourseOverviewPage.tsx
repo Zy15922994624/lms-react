@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Dropdown, Modal } from 'antd'
@@ -12,6 +12,8 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { ROUTES } from '@/shared/constants/routes'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 
 export default function CourseOverviewPage() {
   const navigate = useNavigate()
@@ -105,6 +107,34 @@ export default function CourseOverviewPage() {
     },
   ]
 
+  const infoAside = (
+    <section className={`app-panel ${workspacePanelPadding.aside}`}>
+      <div className="app-section-heading">
+        <h2 className="app-section-title">课程信息</h2>
+      </div>
+      <dl className="space-y-4 text-sm">
+        <div className="flex items-center justify-between gap-4">
+          <dt className="text-stone-500">课程编号</dt>
+          <dd className="font-medium text-stone-900">{course.courseCode || '-'}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <dt className="text-stone-500">当前学期</dt>
+          <dd className="font-medium text-stone-900">{course.semester || '-'}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <dt className="text-stone-500">课程学分</dt>
+          <dd className="font-medium text-stone-900">{course.credits ?? '-'}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <dt className="text-stone-500">更新时间</dt>
+          <dd className="font-medium text-stone-900">
+            {new Date(course.updatedAt).toLocaleDateString('zh-CN')}
+          </dd>
+        </div>
+      </dl>
+    </section>
+  )
+
   return (
     <CourseWorkspaceFrame
       course={course}
@@ -122,46 +152,16 @@ export default function CourseOverviewPage() {
         ) : null
       }
     >
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_320px]">
-        <div>
-          <div className="app-panel px-6 py-6 sm:px-8">
-            <div className="app-section-heading">
-              <h2 className="app-section-title">课程说明</h2>
-            </div>
-            <div className="text-sm leading-7 text-stone-500">
-              {course.description || '暂无课程说明。'}
-            </div>
+      <WorkspaceLayout preset="course" aside={infoAside}>
+        <div className={`app-panel ${workspacePanelPadding.sectionWide}`}>
+          <div className="app-section-heading">
+            <h2 className="app-section-title">课程说明</h2>
+          </div>
+          <div className="max-w-4xl text-sm leading-7 text-stone-500 2xl:max-w-6xl">
+            {course.description || '暂无课程说明。'}
           </div>
         </div>
-
-        <aside className="space-y-6">
-          <section className="app-panel px-5 py-5">
-            <div className="app-section-heading">
-              <h2 className="app-section-title">课程信息</h2>
-            </div>
-            <dl className="space-y-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-stone-500">课程编号</dt>
-                <dd className="font-medium text-stone-900">{course.courseCode || '-'}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-stone-500">当前学期</dt>
-                <dd className="font-medium text-stone-900">{course.semester || '-'}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-stone-500">课程学分</dt>
-                <dd className="font-medium text-stone-900">{course.credits ?? '-'}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-stone-500">更新时间</dt>
-                <dd className="font-medium text-stone-900">
-                  {new Date(course.updatedAt).toLocaleDateString('zh-CN')}
-                </dd>
-              </div>
-            </dl>
-          </section>
-        </aside>
-      </section>
+      </WorkspaceLayout>
 
       <CourseFormModal
         open={isEditModalOpen}

@@ -11,6 +11,8 @@ import {
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
+import PageContainer from '@/shared/layout/PageContainer'
+import { resolvePageWidthMode } from '@/shared/layout/page-width'
 import type { UserRole } from '@/shared/types/user'
 
 const { Content, Header, Sider } = Layout
@@ -48,6 +50,7 @@ export default function AppLayout() {
   const role = userRole()
   const isDesktop = Boolean(screens.lg)
   const selectedKey = location.pathname.split('/')[1] || 'dashboard'
+  const contentWidthMode = resolvePageWidthMode(location.pathname)
 
   const menuItems = useMemo(
     () =>
@@ -224,9 +227,9 @@ export default function AppLayout() {
 
         <Content className="overflow-hidden">
           <div className="app-content-scroll">
-            <div className="app-content-container">
+            <PageContainer mode={contentWidthMode}>
               <Outlet />
-            </div>
+            </PageContainer>
           </div>
         </Content>
       </Layout>

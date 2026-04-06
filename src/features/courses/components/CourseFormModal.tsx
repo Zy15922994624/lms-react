@@ -128,13 +128,17 @@ export default function CourseFormModal({
                 {selectedCoverFile ? '重新选择封面' : '选择封面'}
               </Button>
             </Upload>
-            <div className="text-xs leading-5 text-stone-400">
+            {/* <div className="text-xs leading-5 text-stone-400">
               封面会在提交表单时上传，取消编辑不会产生垃圾文件。
-            </div>
+            </div> */}
             {coverPreview ? (
               <div className="overflow-hidden rounded-[20px] border border-[var(--lms-color-border)] bg-[linear-gradient(180deg,#fff7f2_0%,#fffdfb_100%)]">
                 <img
-                  src={coverPreview.startsWith('/') || coverPreview.startsWith('blob:') ? coverPreview : `/${coverPreview}`}
+                  src={
+                    coverPreview.startsWith('/') || coverPreview.startsWith('blob:')
+                      ? coverPreview
+                      : `/${coverPreview}`
+                  }
                   alt="课程封面预览"
                   className="h-[180px] w-full object-cover"
                 />
@@ -176,7 +180,12 @@ export default function CourseFormModal({
           </Form.Item>
 
           <Form.Item label="最大人数" name="maxStudents">
-            <InputNumber className="!w-full" min={1} max={500} placeholder="1-500，留空表示不限制" />
+            <InputNumber
+              className="!w-full"
+              min={1}
+              max={500}
+              placeholder="1-500，留空表示不限制"
+            />
           </Form.Item>
         </div>
       </Form>

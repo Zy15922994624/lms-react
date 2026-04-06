@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Avatar, Button, Popconfirm, Table, Tag } from 'antd'
@@ -10,6 +10,8 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { ROUTES } from '@/shared/constants/routes'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
+import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 
 const roleLabelMap: Record<string, string> = {
   teacher: '教师',
@@ -23,6 +25,7 @@ export default function CourseMembersPage() {
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageMembers = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
+  const { isMobile, isTablet } = useResponsiveLayout()
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -63,6 +66,7 @@ export default function CourseMembersPage() {
 
   const members = membersPage?.items ?? []
   const totalMembers = membersPage?.total ?? 0
+  const tableScrollX = isMobile ? 720 : isTablet ? 920 : 1180
 
   const columns: ColumnsType<CourseMember> = [
     {
@@ -140,16 +144,18 @@ export default function CourseMembersPage() {
   return (
     <CourseWorkspaceFrame course={course}>
       <section className="app-panel overflow-hidden">
-        <div className="border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8">
+        <div className={workspacePanelPadding.blockHeader}>
           <h2 className="text-xl font-semibold tracking-[-0.02em] text-stone-900">课程成员</h2>
         </div>
 
-        <div className="px-3 py-4 sm:px-5">
+        <div className={workspacePanelPadding.blockBody}>
           <Table<CourseMember>
             rowKey="id"
             columns={columns}
             dataSource={members}
             loading={isMembersFetching}
+            size={isMobile ? 'small' : 'middle'}
+            scroll={{ x: tableScrollX }}
             locale={{ emptyText: '当前课程暂无成员信息' }}
             pagination={{
               current: currentPage,

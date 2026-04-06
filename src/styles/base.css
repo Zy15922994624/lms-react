@@ -42,7 +42,12 @@
   --lms-space-8: 32px;
 
   --lms-layout-header-height: 72px;
-  --lms-layout-content-max-width: 1440px;
+  --lms-layout-page-padding-inline: clamp(12px, 1.15vw, 22px);
+  --lms-layout-page-padding-block: clamp(12px, 1.1vw, 20px);
+  --lms-layout-content-width-narrow: 1080px;
+  --lms-layout-content-width-standard: 1580px;
+  --lms-layout-content-width-workspace: 2000px;
+  --lms-layout-content-width-workspace-wide: 2280px;
 }
 
 *,
@@ -100,13 +105,29 @@ img {
 .app-content-scroll {
   height: calc(100vh - var(--lms-layout-header-height));
   overflow-y: auto;
-  padding: var(--lms-space-4);
+  padding: var(--lms-layout-page-padding-block) var(--lms-layout-page-padding-inline);
 }
 
 .app-content-container {
+  --lms-layout-current-width: var(--lms-layout-content-width-standard);
   width: 100%;
-  max-width: var(--lms-layout-content-max-width);
+  max-width: min(
+    var(--lms-layout-current-width),
+    calc(100vw - (var(--lms-layout-page-padding-inline) * 2))
+  );
   margin: 0 auto;
+}
+
+.app-content-container--narrow {
+  --lms-layout-current-width: var(--lms-layout-content-width-narrow);
+}
+
+.app-content-container--standard {
+  --lms-layout-current-width: var(--lms-layout-content-width-standard);
+}
+
+.app-content-container--workspace {
+  --lms-layout-current-width: var(--lms-layout-content-width-workspace);
 }
 
 .app-page {
@@ -161,10 +182,17 @@ img {
 
 @media (min-width: 768px) {
   .app-content-scroll {
-    padding: var(--lms-space-6);
+    padding: max(18px, var(--lms-layout-page-padding-block))
+      max(18px, var(--lms-layout-page-padding-inline));
   }
 
   .app-page {
     gap: var(--lms-space-8);
+  }
+}
+
+@media (min-width: 1920px) {
+  .app-content-container--workspace {
+    --lms-layout-current-width: var(--lms-layout-content-width-workspace-wide);
   }
 }
