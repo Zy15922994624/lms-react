@@ -29,10 +29,52 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-antd': ['antd', '@ant-design/icons'],
-            'vendor-utils': ['axios', 'dayjs', 'zustand'],
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return
+            }
+
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/react-router-dom/')
+            ) {
+              return 'vendor-react'
+            }
+
+            if (id.includes('/@tanstack/')) {
+              return 'vendor-query'
+            }
+
+            if (id.includes('/antd/') || id.includes('/@ant-design/icons/')) {
+              return 'vendor-antd'
+            }
+
+            if (id.includes('/rc-')) {
+              return 'vendor-antd-rc'
+            }
+
+            if (id.includes('/@dnd-kit/')) {
+              return 'vendor-dnd'
+            }
+
+            if (id.includes('/echarts/')) {
+              return 'vendor-echarts'
+            }
+
+            if (id.includes('/socket.io-client/')) {
+              return 'vendor-socket'
+            }
+
+            if (
+              id.includes('/axios/') ||
+              id.includes('/dayjs/') ||
+              id.includes('/zustand/')
+            ) {
+              return 'vendor-utils'
+            }
+
+            return
           },
         },
       },
