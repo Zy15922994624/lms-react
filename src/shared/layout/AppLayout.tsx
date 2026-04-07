@@ -67,7 +67,7 @@ export default function AppLayout() {
         hasRole(['teacher', 'student', 'admin'])
           ? { key: 'courses', icon: <BookOutlined />, label: '课程空间' }
           : null,
-        hasRole(['teacher'])
+        hasRole(['teacher', 'admin'])
           ? { key: 'question-bank', icon: <BookOutlined />, label: '题库管理' }
           : null,
         hasRole(['admin'])

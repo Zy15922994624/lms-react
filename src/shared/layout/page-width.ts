@@ -11,6 +11,10 @@ export function resolvePageWidthMode(pathname: string): PageWidthMode {
     return 'workspace'
   }
 
+  if (pathname === ROUTES.QUESTION_BANK || pathname.startsWith(`${ROUTES.QUESTION_BANK}/`)) {
+    return 'workspace'
+  }
+
   if (pathname.startsWith(`${ROUTES.COURSES}/`)) {
     return 'workspace'
   }

@@ -9,6 +9,7 @@ import CourseOverviewPage from '@/features/courses/pages/CourseOverviewPage'
 import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
 import CourseResourcesPage from '@/features/courses/pages/CourseResourcesPage'
 import CourseDiscussionsPage from '@/features/courses/pages/CourseDiscussionsPage'
+import QuestionBankPage from '@/features/question-bank/pages/QuestionBankPage'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '@/shared/layout/AppLayout'
 import PageLoading from '@/shared/components/feedback/PageLoading'
@@ -92,6 +93,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute roles={['teacher', 'student', 'admin']}>
                 <CourseDiscussionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="question-bank"
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <QuestionBankPage />
               </ProtectedRoute>
             }
           />
