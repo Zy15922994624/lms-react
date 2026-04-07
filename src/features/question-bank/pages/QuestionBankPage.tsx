@@ -1,14 +1,19 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Dropdown, Input, Pagination, Popconfirm, Select, Spin, Table, Tag } from 'antd'
-import type { TableColumnsType } from 'antd'
 import {
-  DeleteOutlined,
-  DownOutlined,
-  DownloadOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from '@ant-design/icons'
+  Button,
+  Dropdown,
+  Input,
+  Pagination,
+  Popconfirm,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+} from 'antd'
+import type { TableColumnsType } from 'antd'
+import { DownOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { courseService } from '@/features/courses/services/course.service'
 import type { CourseSummary } from '@/features/courses/types/course'
 import QuestionBankFormModal from '@/features/question-bank/components/QuestionBankFormModal'
@@ -48,22 +53,6 @@ const questionTypeBackgroundMap: Record<QuestionType, string> = {
 const questionBankHeroPadding = 'px-5 py-4 sm:px-6 sm:py-5 xl:px-7 xl:py-5 2xl:px-8 2xl:py-6'
 const questionBankSectionPadding = 'px-5 py-5 sm:px-6 sm:py-5 xl:px-7 xl:py-6 2xl:px-8'
 const questionBankAsidePadding = 'px-4 py-4 xl:px-5 xl:py-5 2xl:px-6 2xl:py-5'
-
-function getOwnerName(question: QuestionBankItem) {
-  return question.owner?.fullName || question.owner?.username || '未知成员'
-}
-
-function getAnswerPreview(question: QuestionBankItem) {
-  if (Array.isArray(question.answer)) {
-    return question.answer.join('、')
-  }
-
-  if (typeof question.answer === 'string') {
-    return question.answer
-  }
-
-  return '—'
-}
 
 function summarizeTypeCount(items: QuestionBankItem[]) {
   return items.reduce(
@@ -111,8 +100,19 @@ export default function QuestionBankPage() {
     queryFn: () => courseService.getCourses(true, 1, 100),
   })
 
-  const { data: questionPage, isLoading: isQuestionLoading, isFetching: isQuestionFetching } = useQuery({
-    queryKey: ['question-bank', currentPage, pageSize, searchKeyword, selectedType, selectedCourseId],
+  const {
+    data: questionPage,
+    isLoading: isQuestionLoading,
+    isFetching: isQuestionFetching,
+  } = useQuery({
+    queryKey: [
+      'question-bank',
+      currentPage,
+      pageSize,
+      searchKeyword,
+      selectedType,
+      selectedCourseId,
+    ],
     queryFn: () =>
       questionBankService.getQuestionBank({
         page: currentPage,
@@ -176,28 +176,22 @@ export default function QuestionBankPage() {
       dataIndex: 'title',
       key: 'title',
       align: 'center',
-      className: 'text-center',
-      ellipsis: { showTitle: true },
-      onHeaderCell: () => ({
-        style: { textAlign: 'center' },
-      }),
-      onCell: () => ({
-        style: { textAlign: 'center' },
-      }),
+      ellipsis: { showTitle: false },
+      onHeaderCell: () => ({ style: { textAlign: 'center' } }),
+      onCell: () => ({ style: { textAlign: 'center' } }),
       render: (_value, question) => (
-        <div className="min-w-0 space-y-2 py-1 text-center">
-          <div className="truncate text-base font-semibold tracking-[-0.02em] text-stone-950" title={question.title}>
+        <div className="min-w-0 space-y-1 py-1 text-center">
+          <div
+            className="truncate text-base font-semibold tracking-[-0.02em] text-stone-950"
+            title={question.title}
+          >
             {question.title}
           </div>
-          {question.description ? (
+          {/* {question.description ? (
             <div className="truncate text-sm leading-6 text-stone-500" title={question.description}>
               {question.description}
             </div>
-          ) : null}
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-stone-400">
-            <span>答案 {getAnswerPreview(question)}</span>
-            <span>维护人 {getOwnerName(question)}</span>
-          </div>
+          ) : null} */}
         </div>
       ),
     },
@@ -217,8 +211,8 @@ export default function QuestionBankPage() {
       key: 'course',
       width: 180,
       align: 'center',
-      ellipsis: { showTitle: true },
-      render: (_value: unknown, question) => (
+      ellipsis: { showTitle: false },
+      render: (_value, question) => (
         <span title={question.course?.title || '—'}>{question.course?.title || '—'}</span>
       ),
     },
@@ -242,17 +236,12 @@ export default function QuestionBankPage() {
       key: 'actions',
       width: 150,
       align: 'center',
-      className: 'text-center',
-      onHeaderCell: () => ({
-        style: { textAlign: 'center' },
-      }),
-      onCell: () => ({
-        style: { textAlign: 'center' },
-      }),
-      render: (_value: unknown, question) => (
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button type="link" onClick={() => openEditModal(question)}>
-            查看
+      onHeaderCell: () => ({ style: { textAlign: 'center' } }),
+      onCell: () => ({ style: { textAlign: 'center' } }),
+      render: (_value, question) => (
+        <div>
+          <Button type="link" size="small" onClick={() => openEditModal(question)}>
+            编辑
           </Button>
           <Popconfirm
             title="确定删除这道题目吗？"
@@ -260,7 +249,7 @@ export default function QuestionBankPage() {
             cancelText="取消"
             onConfirm={() => deleteMutation.mutate(question.id)}
           >
-            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending}>
+            <Button type="link" size="small" danger loading={deleteMutation.isPending}>
               删除
             </Button>
           </Popconfirm>
@@ -274,6 +263,28 @@ export default function QuestionBankPage() {
     setSearchKeyword(value.trim())
   }
 
+  const importMenu = {
+    items: [
+      {
+        key: 'template',
+        label: '下载模板',
+        icon: <DownloadOutlined />,
+      },
+      {
+        key: 'create',
+        label: '手动录入',
+        icon: <PlusOutlined />,
+      },
+    ],
+    onClick: ({ key }: { key: string }) => {
+      if (key === 'create') {
+        openCreateModal()
+        return
+      }
+      void handleDownloadTemplate()
+    },
+  }
+
   const handleDownloadTemplate = async () => {
     try {
       const blob = await questionBankService.downloadTemplate()
@@ -281,7 +292,9 @@ export default function QuestionBankPage() {
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = '题库导入模板.xlsx'
+      document.body.appendChild(anchor)
       anchor.click()
+      anchor.remove()
       URL.revokeObjectURL(url)
     } catch {
       uiMessage.error('模板下载失败')
@@ -328,12 +341,17 @@ export default function QuestionBankPage() {
               </div>
             </div>
             <div className="mt-3 space-y-2.5 text-sm text-stone-700">
-              {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map((type) => (
-                <div key={type} className="flex items-center justify-between rounded-2xl bg-stone-50 px-4 py-2.5">
-                  <span>{questionTypeTextMap[type]}</span>
-                  <strong className="text-stone-950">{currentPageTypeCountMap[type]}</strong>
-                </div>
-              ))}
+              {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map(
+                (type) => (
+                  <div
+                    key={type}
+                    className="flex items-center justify-between rounded-2xl bg-stone-50 px-4 py-2.5"
+                  >
+                    <span>{questionTypeTextMap[type]}</span>
+                    <strong className="text-stone-950">{currentPageTypeCountMap[type]}</strong>
+                  </div>
+                ),
+              )}
             </div>
           </section>
         }
@@ -349,40 +367,22 @@ export default function QuestionBankPage() {
                 </h1>
                 <div className="text-base text-stone-500">共 {total} 题</div>
               </div>
-              <Dropdown.Button
-                type="primary"
-                size="large"
-                className="shrink-0 md:justify-self-end"
-                trigger={['click']}
-                icon={<DownOutlined />}
-                onClick={() => setIsImportModalOpen(true)}
-                menu={{
-                  items: [
-                    {
-                      key: 'template',
-                      label: '下载模板',
-                      icon: <DownloadOutlined />,
-                    },
-                    {
-                      key: 'create',
-                      label: '手动录入',
-                      icon: <PlusOutlined />,
-                    },
-                  ],
-                  onClick: ({ key }) => {
-                    if (key === 'create') {
-                      openCreateModal()
-                      return
-                    }
-                    void handleDownloadTemplate()
-                  },
-                }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <UploadOutlined />
-                  Excel 导入
-                </span>
-              </Dropdown.Button>
+              <Space.Compact size="large" className="shrink-0 md:justify-self-end">
+                <Button type="primary" size="large" onClick={() => setIsImportModalOpen(true)}>
+                  <span className="inline-flex items-center gap-2">
+                    <UploadOutlined />
+                    Excel 导入
+                  </span>
+                </Button>
+                <Dropdown trigger={['click']} menu={importMenu}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<DownOutlined />}
+                    aria-label="更多导入操作"
+                  />
+                </Dropdown>
+              </Space.Compact>
             </div>
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px]">
@@ -412,26 +412,24 @@ export default function QuestionBankPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map((type) => {
-                const selected = selectedType === type
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`rounded-2xl px-3 py-1.5 text-sm transition ${
-                      selected
-                        ? 'bg-[var(--lms-color-primary)] text-white shadow-[0_10px_20px_rgba(255,107,53,0.18)]'
-                        : questionTypeBackgroundMap[type]
-                    }`}
-                    onClick={() => {
-                      setCurrentPage(1)
-                      setSelectedType(selected ? 'all' : type)
-                    }}
-                  >
-                    {questionTypeTextMap[type]}
-                  </button>
-                )
-              })}
+              {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map(
+                (type) => {
+                  const selected = selectedType === type
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`rounded-2xl px-3 py-1.5 text-sm transition ${selected ? 'bg-[var(--lms-color-primary)] text-white shadow-[0_10px_20px_rgba(255,107,53,0.18)]' : questionTypeBackgroundMap[type]}`}
+                      onClick={() => {
+                        setCurrentPage(1)
+                        setSelectedType(selected ? 'all' : type)
+                      }}
+                    >
+                      {questionTypeTextMap[type]}
+                    </button>
+                  )
+                },
+              )}
             </div>
           </div>
         </section>

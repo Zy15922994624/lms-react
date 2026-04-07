@@ -7,7 +7,6 @@ import {
   InputNumber,
   Modal,
   Select,
-  Space,
 } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import type { CourseSummary } from '@/features/courses/types/course'
@@ -143,11 +142,18 @@ export default function QuestionBankFormModal({
     <Modal
       open={open}
       title={question ? '编辑题目' : '新增题目'}
-      width={760}
+      width={880}
       okText={question ? '保存修改' : '创建题目'}
       cancelText="取消"
       confirmLoading={submitting}
       destroyOnHidden
+      styles={{
+        body: {
+          maxHeight: 'calc(100vh - 180px)',
+          overflowY: 'auto',
+          paddingTop: 16,
+        },
+      }}
       onCancel={onCancel}
       onOk={() => void form.submit()}
       afterOpenChange={(nextOpen) => {
@@ -162,7 +168,7 @@ export default function QuestionBankFormModal({
         initialValues={buildInitialValues(question)}
         onFinish={(values) => void handleFinish(values)}
       >
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_280px]">
           <Form.Item label="题干" name="title" rules={[{ required: true, message: '请输入题干' }]}>
             <Input maxLength={1000} showCount placeholder="输入题干" />
           </Form.Item>
@@ -178,7 +184,9 @@ export default function QuestionBankFormModal({
               }))}
             />
           </Form.Item>
+        </div>
 
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_160px]">
           <Form.Item label="题型" name="type" rules={[{ required: true, message: '请选择题型' }]}>
             <Select
               options={[
@@ -196,115 +204,131 @@ export default function QuestionBankFormModal({
         </div>
 
         <Form.Item label="补充说明" name="description">
-          <Input.TextArea rows={3} maxLength={2000} showCount placeholder="可选" />
+          <Input.TextArea rows={2} maxLength={2000} showCount placeholder="可选" />
         </Form.Item>
 
         {isChoiceType(questionType) ? (
-          <Form.List
-            name="options"
-            rules={[
-              {
-                validator: async (_, value: QuestionBankOption[] | undefined) => {
-                  if (!value || value.length < 2) {
-                    throw new Error('至少保留两个选项')
-                  }
-                  if (value.some((item) => !item?.key?.trim() || !item?.label?.trim())) {
-                    throw new Error('选项键值和内容不能为空')
-                  }
-                  const keySet = new Set<string>()
-                  for (const item of value) {
-                    const key = item.key.trim()
-                    if (keySet.has(key)) {
-                      throw new Error('选项键值不能重复')
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+            <Form.List
+              name="options"
+              rules={[
+                {
+                  validator: async (_, value: QuestionBankOption[] | undefined) => {
+                    if (!value || value.length < 2) {
+                      throw new Error('至少保留两个选项')
                     }
-                    keySet.add(key)
-                  }
+                    if (value.some((item) => !item?.key?.trim() || !item?.label?.trim())) {
+                      throw new Error('选项键值和内容不能为空')
+                    }
+                    const keySet = new Set<string>()
+                    for (const item of value) {
+                      const key = item.key.trim()
+                      if (keySet.has(key)) {
+                        throw new Error('选项键值不能重复')
+                      }
+                      keySet.add(key)
+                    }
+                  },
                 },
-              },
-            ]}
-          >
-            {(fields, { add, remove }, { errors }) => (
-              <Form.Item label="选项" required>
-                <div className="space-y-3">
-                  {fields.map((field, index) => (
-                    <Space key={field.key} align="start" className="flex w-full">
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'key']}
-                        className="mb-0 w-24"
-                        rules={[{ required: true, message: '键值必填' }]}
+              ]}
+            >
+              {(fields, { add, remove }, { errors }) => (
+                <Form.Item label="选项" required className="mb-0">
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.key}
+                        className="grid w-full grid-cols-[88px_minmax(0,1fr)_40px] items-start gap-3"
                       >
-                        <Input placeholder={`选项 ${index + 1}`} />
-                      </Form.Item>
-                      <Form.Item
-                        {...field}
-                        name={[field.name, 'label']}
-                        className="mb-0 flex-1"
-                        rules={[{ required: true, message: '内容必填' }]}
-                      >
-                        <Input placeholder="输入选项内容" />
-                      </Form.Item>
-                      <Button
-                        danger
-                        type="text"
-                        icon={<DeleteOutlined />}
-                        disabled={fields.length <= 2}
-                        onClick={() => remove(field.name)}
-                      />
-                    </Space>
-                  ))}
+                        <Form.Item
+                          name={[field.name, 'key']}
+                          className="mb-0"
+                          rules={[{ required: true, message: '键值必填' }]}
+                        >
+                          <Input placeholder={`选项 ${index + 1}`} />
+                        </Form.Item>
+                        <Form.Item
+                          name={[field.name, 'label']}
+                          className="mb-0"
+                          rules={[{ required: true, message: '内容必填' }]}
+                        >
+                          <Input placeholder="输入选项内容" />
+                        </Form.Item>
+                        <Button
+                          danger
+                          type="text"
+                          icon={<DeleteOutlined />}
+                          disabled={fields.length <= 2}
+                          onClick={() => remove(field.name)}
+                        />
+                      </div>
+                    ))}
 
-                  <Button type="dashed" block icon={<PlusOutlined />} onClick={() => add({ key: '', label: '' })}>
-                    添加选项
-                  </Button>
-                  <Form.ErrorList errors={errors} />
-                </div>
+                    <Button
+                      type="dashed"
+                      block
+                      icon={<PlusOutlined />}
+                      onClick={() => add({ key: '', label: '' })}
+                    >
+                      添加选项
+                    </Button>
+                    <Form.ErrorList errors={errors} />
+                  </div>
+                </Form.Item>
+              )}
+            </Form.List>
+
+            <div className="space-y-5">
+              {questionType === 'single_choice' ? (
+                <Form.Item
+                  label="参考答案"
+                  name="singleAnswer"
+                  rules={[{ required: true, message: '请选择正确答案' }]}
+                >
+                  <Select placeholder="选择正确选项" options={answerOptions} />
+                </Form.Item>
+              ) : null}
+
+              {questionType === 'multi_choice' ? (
+                <Form.Item
+                  label="参考答案"
+                  name="multiAnswer"
+                  rules={[
+                    {
+                      validator: async (_, value: string[] | undefined) => {
+                        if (!value?.length) {
+                          throw new Error('至少选择一个正确答案')
+                        }
+                      },
+                    },
+                  ]}
+                >
+                  <Checkbox.Group options={answerOptions} className="grid gap-2" />
+                </Form.Item>
+              ) : null}
+
+              <Form.Item label="题目解析" name="analysis" className="mb-0">
+                <Input.TextArea rows={8} maxLength={4000} showCount placeholder="可选" />
               </Form.Item>
-            )}
-          </Form.List>
-        ) : null}
-
-        {questionType === 'single_choice' ? (
-          <Form.Item
-            label="参考答案"
-            name="singleAnswer"
-            rules={[{ required: true, message: '请选择正确答案' }]}
-          >
-            <Select placeholder="选择正确选项" options={answerOptions} />
-          </Form.Item>
-        ) : null}
-
-        {questionType === 'multi_choice' ? (
-          <Form.Item
-            label="参考答案"
-            name="multiAnswer"
-            rules={[
-              {
-                validator: async (_, value: string[] | undefined) => {
-                  if (!value?.length) {
-                    throw new Error('至少选择一个正确答案')
-                  }
-                },
-              },
-            ]}
-          >
-            <Checkbox.Group options={answerOptions} className="grid gap-2 md:grid-cols-2" />
-          </Form.Item>
+            </div>
+          </div>
         ) : null}
 
         {questionType === 'fill_text' || questionType === 'rich_text' ? (
-          <Form.Item
-            label="参考答案"
-            name="textAnswer"
-            rules={[{ required: true, message: '请输入参考答案' }]}
-          >
-            <Input.TextArea rows={4} maxLength={4000} showCount placeholder="输入参考答案" />
-          </Form.Item>
-        ) : null}
+          <div className="grid gap-5 lg:grid-cols-2">
+            <Form.Item
+              label="参考答案"
+              name="textAnswer"
+              rules={[{ required: true, message: '请输入参考答案' }]}
+            >
+              <Input.TextArea rows={7} maxLength={4000} showCount placeholder="输入参考答案" />
+            </Form.Item>
 
-        <Form.Item label="题目解析" name="analysis">
-          <Input.TextArea rows={4} maxLength={4000} showCount placeholder="可选" />
-        </Form.Item>
+            <Form.Item label="题目解析" name="analysis">
+              <Input.TextArea rows={7} maxLength={4000} showCount placeholder="可选" />
+            </Form.Item>
+          </div>
+        ) : null}
       </Form>
     </Modal>
   )

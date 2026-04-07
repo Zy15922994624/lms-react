@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Alert, Button, Modal, Select, Space, Tag, Upload } from 'antd'
 import type { UploadFile, UploadProps } from 'antd'
 import { DownloadOutlined, InboxOutlined } from '@ant-design/icons'
@@ -9,16 +9,7 @@ import { uiMessage } from '@/shared/components/feedback/message'
 
 const { Dragger } = Upload
 
-const templateFieldLabels = [
-  '题干',
-  '题型',
-  '分值',
-  '选项',
-  '参考答案',
-  '题目解析',
-  '补充说明',
-]
-
+const templateFieldLabels = ['题干', '题型', '分值', '选项', '参考答案', '题目解析', '补充说明']
 const typeRules = [
   'single_choice：单选题',
   'multi_choice：多选题',
@@ -43,6 +34,7 @@ export default function QuestionBankImportModal({
 }: QuestionBankImportModalProps) {
   const [courseId, setCourseId] = useState<string>()
   const [fileList, setFileList] = useState<UploadFile[]>([])
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [downloadingTemplate, setDownloadingTemplate] = useState(false)
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<QuestionBankImportResult | null>(null)
@@ -56,16 +48,40 @@ export default function QuestionBankImportModal({
     [courses],
   )
 
+  const resetState = () => {
+    setCourseId(undefined)
+    setSelectedFile(null)
+    setFileList([])
+    setResult(null)
+  }
+
   const uploadProps: UploadProps = {
     accept: '.xlsx,.xls',
     multiple: false,
     maxCount: 1,
     fileList,
     beforeUpload: (file) => {
-      setFileList([file])
+      const isExcel = /\.(xlsx|xls)$/i.test(file.name)
+      if (!isExcel) {
+        uiMessage.warning('请选择 xlsx 或 xls 文件')
+        return Upload.LIST_IGNORE
+      }
+
+      setSelectedFile(file)
+      setFileList([
+        {
+          uid: file.uid,
+          name: file.name,
+          status: 'done',
+          size: file.size,
+          type: file.type,
+          originFileObj: file,
+        },
+      ])
       return false
     },
     onRemove: () => {
+      setSelectedFile(null)
       setFileList([])
       return true
     },
@@ -79,7 +95,9 @@ export default function QuestionBankImportModal({
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = '题库导入模板.xlsx'
+      document.body.appendChild(anchor)
       anchor.click()
+      anchor.remove()
       URL.revokeObjectURL(url)
     } catch {
       uiMessage.error('模板下载失败')
@@ -89,27 +107,26 @@ export default function QuestionBankImportModal({
   }
 
   const handleClose = () => {
-    setCourseId(undefined)
-    setFileList([])
-    setResult(null)
+    resetState()
     onCancel()
   }
 
   const handleSubmit = async () => {
+    const currentFile = selectedFile ?? (fileList[0]?.originFileObj instanceof File ? fileList[0].originFileObj : null)
+
     if (!courseId) {
       uiMessage.warning('请选择所属课程')
       return
     }
 
-    const file = fileList[0]?.originFileObj
-    if (!file) {
+    if (!currentFile) {
       uiMessage.warning('请选择要导入的 Excel 文件')
       return
     }
 
     try {
       setImporting(true)
-      const importResult = await questionBankService.importByExcel(file, courseId)
+      const importResult = await questionBankService.importByExcel(currentFile, courseId)
       setResult(importResult)
       await onSuccess(importResult)
 
@@ -140,9 +157,7 @@ export default function QuestionBankImportModal({
       onOk={() => void handleSubmit()}
       afterOpenChange={(nextOpen) => {
         if (!nextOpen) {
-          setCourseId(undefined)
-          setFileList([])
-          setResult(null)
+          resetState()
         }
       }}
     >
@@ -205,7 +220,7 @@ export default function QuestionBankImportModal({
           <div className="space-y-3">
             <Alert
               type={result.errorCount > 0 ? 'warning' : 'success'}
-              message={`成功 ${result.successCount} 条，失败 ${result.errorCount} 条`}
+              title={`成功 ${result.successCount} 条，失败 ${result.errorCount} 条`}
               showIcon
             />
 
