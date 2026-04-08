@@ -10,6 +10,10 @@ import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
 import CourseResourcesPage from '@/features/courses/pages/CourseResourcesPage'
 import CourseDiscussionsPage from '@/features/courses/pages/CourseDiscussionsPage'
 import QuestionBankPage from '@/features/question-bank/pages/QuestionBankPage'
+import TasksPage from '@/features/tasks/pages/TasksPage'
+import TaskCreatePage from '@/features/tasks/pages/TaskCreatePage'
+import TaskDetailPage from '@/features/tasks/pages/TaskDetailPage'
+import TaskEditPage from '@/features/tasks/pages/TaskEditPage'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '@/shared/layout/AppLayout'
 import PageLoading from '@/shared/components/feedback/PageLoading'
@@ -53,6 +57,38 @@ export default function AppRouter() {
             element={
               <ProtectedRoute>
                 <StudentDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tasks"
+            element={
+              <ProtectedRoute roles={['teacher', 'student']}>
+                <TasksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tasks/create"
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <TaskCreatePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tasks/:id"
+            element={
+              <ProtectedRoute roles={['teacher', 'student', 'admin']}>
+                <TaskDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tasks/:id/edit"
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <TaskEditPage />
               </ProtectedRoute>
             }
           />
