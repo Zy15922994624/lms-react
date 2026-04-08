@@ -32,7 +32,7 @@ export default function WorkspaceLayout({
   children,
 }: WorkspaceLayoutProps) {
   return (
-    <section className={joinClassNames(presetClassMap[preset], className)}>
+    <section className={joinClassNames(aside ? presetClassMap[preset] : undefined, className)}>
       <div className={joinClassNames(mainClassName)}>{children}</div>
       {aside ? (
         <aside className={joinClassNames('xl:sticky xl:top-6 xl:self-start 2xl:top-8', asideClassName)}>

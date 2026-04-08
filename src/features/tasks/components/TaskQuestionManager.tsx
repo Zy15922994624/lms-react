@@ -67,6 +67,11 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       ),
     [questions],
   )
+  const questionTotalScore = useMemo(
+    () => orderedQuestions.reduce((sum, item) => sum + item.score, 0),
+    [orderedQuestions],
+  )
+  const isQuestionScoreValid = questionTotalScore === 100
 
   const addMutation = useMutation({
     mutationFn: (questionBankIds: string[]) =>
@@ -75,7 +80,11 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       uiMessage.success('题目已加入任务')
       setSelectedRowKeys([])
       setIsPickerOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      ])
     },
     onError: () => {
       uiMessage.error('加入任务失败')
@@ -89,7 +98,11 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
     },
     onSuccess: async () => {
       uiMessage.success('题目已删除')
-      await queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      ])
     },
     onError: () => {
       uiMessage.error('删除题目失败')
@@ -103,7 +116,11 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
     mutationFn: (questionOrders: Array<{ questionId: string; order: number }>) =>
       taskService.reorderTaskQuestions(task.id, { questionOrders }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      ])
     },
     onError: () => {
       uiMessage.error('更新题目顺序失败')
@@ -182,31 +199,17 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
     )
   }
 
-  if (!canConfigureQuestions) {
-    return (
-      <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-        <div className="app-section-heading">
-          <h2 className="app-section-title">题目编排</h2>
-        </div>
-        <div className="rounded-[24px] bg-stone-50 px-5 py-5 text-sm leading-7 text-stone-500">
-          {task.type === 'reading'
-            ? '阅读任务以资源引导和文本总结为主，当前不配置题目。'
-            : '项目任务更适合通过说明与附件下发，本阶段不配置题目。'}
-        </div>
-      </section>
-    )
-  }
+  if (!canConfigureQuestions) return null
 
   return (
     <>
       <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <div className="app-section-heading">
-              <h2 className="app-section-title">题目编排</h2>
-            </div>
-            <p className="mt-2 text-sm leading-7 text-stone-500">
-              为作业或测验配置题目，学生端会按当前顺序展示题目内容。
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="app-section-heading !mb-0">
+            <h2 className="app-section-title">选题</h2>
+            <p className={`mt-2 text-sm ${isQuestionScoreValid ? 'text-stone-500' : 'text-rose-500'}`}>
+              当前题目合计 {questionTotalScore}/100 分
+              {isQuestionScoreValid ? '' : '，请继续调整'}
             </p>
           </div>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsPickerOpen(true)}>
@@ -214,12 +217,12 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
           </Button>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-5">
           <TaskQuestionList
             questions={orderedQuestions}
             loading={isLoading}
             showAnswer
-            emptyText="还没有加入题目，可以先从题库选择。"
+            emptyText="还没有题目。"
             onMoveUp={(questionId) => void handleMove(questionId, -1)}
             onMoveDown={(questionId) => void handleMove(questionId, 1)}
             onDelete={(questionId) => void deleteMutation.mutateAsync(questionId)}

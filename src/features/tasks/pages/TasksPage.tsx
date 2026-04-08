@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Dropdown, Empty, Input, Modal, Pagination, Select, Tag } from 'antd'
+import { Button, Dropdown, Empty, Input, Modal, Select, Table, Tag } from 'antd'
 import type { MenuProps } from 'antd'
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/auth.store'
@@ -11,7 +12,7 @@ import type { PendingGradingItem, TaskItem, TaskType } from '@/features/tasks/ty
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
-import { formatDateTime, getDueDateClass, isOverdue } from '@/shared/utils/date'
+import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
 const taskTypeTextMap: Record<TaskType, string> = {
   homework: '作业',
@@ -25,28 +26,6 @@ const taskTypeColorMap: Record<TaskType, string> = {
   quiz: 'orange',
   project: 'blue',
   reading: 'purple',
-}
-
-function PendingGradingCard({ item, onOpen }: { item: PendingGradingItem; onOpen: (taskId: string) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onOpen(item.taskId)}
-      className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
-    >
-      <div className="flex items-center gap-2">
-        <Tag color={taskTypeColorMap[item.taskType]}>{taskTypeTextMap[item.taskType]}</Tag>
-        <span className="text-xs text-stone-400">待批改</span>
-      </div>
-      <div className="mt-3 text-sm font-medium text-stone-900">{item.taskTitle}</div>
-      <div className="mt-2 text-xs leading-5 text-stone-500">
-        {item.courseTitle || '未命名课程'} · {item.studentName}
-      </div>
-      <div className="mt-1 text-xs leading-5 text-stone-400">
-        提交于 {formatDateTime(item.submittedAt)}
-      </div>
-    </button>
-  )
 }
 
 export default function TasksPage() {
@@ -104,62 +83,198 @@ export default function TasksPage() {
   const tasks = useMemo(() => taskPage?.items ?? [], [taskPage])
   const total = taskPage?.total ?? 0
 
-  const metrics = useMemo(() => {
-    const publishedCount = tasks.filter((task) => task.isPublished).length
-    const overdueCount = tasks.filter((task) => isOverdue(task.dueDate)).length
-    const waitingGradeCount = tasks.reduce(
-      (sum, task) => sum + Math.max(task.submittedCount - task.gradedCount, 0),
-      0,
-    )
-    const gradedForStudent = tasks.filter((task) => task.currentUserSubmissionStatus === 'graded').length
-
-    return isTeacherView
-      ? [
-          { label: '当前结果数', value: total || tasks.length },
-          { label: '已发布', value: publishedCount },
-          { label: '待批改', value: waitingGradeCount },
-          { label: '已过期', value: overdueCount },
-        ]
-      : [
-          { label: '当前结果数', value: total || tasks.length },
-          { label: '已提交', value: tasks.filter((task) => task.currentUserSubmissionStatus !== 'not_submitted').length },
-          { label: '已评分', value: gradedForStudent },
-          { label: '已过期', value: overdueCount },
-        ]
-  }, [isTeacherView, tasks, total])
-
   const focusTasks = useMemo(
     () =>
       [...tasks]
         .sort(
           (left, right) =>
-            right.submittedCount - right.gradedCount - (left.submittedCount - left.gradedCount),
+            right.submittedCount -
+            right.gradedCount -
+            (left.submittedCount - left.gradedCount),
         )
         .slice(0, 4),
     [tasks],
   )
 
-  const actionItems = (task: TaskItem): MenuProps['items'] => [
-    {
-      key: 'detail',
-      label: '查看详情',
-      onClick: () => navigate(`/tasks/${task.id}`),
-    },
-    {
-      key: 'edit',
-      label: '编辑任务',
-      onClick: () => navigate(`/tasks/${task.id}/edit`),
-    },
-    {
-      key: 'delete',
-      label: '删除任务',
-      danger: true,
-      onClick: () => setPendingDeleteTask(task),
-    },
-  ]
+  const actionItems = useCallback(
+    (task: TaskItem): MenuProps['items'] => [
+      {
+        key: 'detail',
+        label: '查看详情',
+        onClick: () => navigate(`/tasks/${task.id}`),
+      },
+      {
+        key: 'edit',
+        label: '编辑任务',
+        onClick: () => navigate(`/tasks/${task.id}/edit`),
+      },
+      {
+        key: 'delete',
+        label: '删除任务',
+        danger: true,
+        onClick: () => setPendingDeleteTask(task),
+      },
+    ],
+    [navigate],
+  )
+
+  const pendingGradingColumns = useMemo<ColumnsType<PendingGradingItem>>(
+    () => [
+      {
+        title: '任务',
+        dataIndex: 'taskTitle',
+        key: 'taskTitle',
+        render: (value: string, record) => (
+          <button
+            type="button"
+            className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
+            onClick={() => navigate(`/tasks/${record.taskId}`)}
+          >
+            {value}
+          </button>
+        ),
+      },
+      {
+        title: '学生',
+        dataIndex: 'studentName',
+        key: 'studentName',
+        width: 110,
+      },
+      {
+        title: '提交时间',
+        dataIndex: 'submittedAt',
+        key: 'submittedAt',
+        width: 168,
+        render: (value: string) => formatDateTime(value),
+      },
+    ],
+    [navigate],
+  )
+
+  const focusTaskColumns = useMemo<ColumnsType<TaskItem>>(
+    () => [
+      {
+        title: '任务',
+        dataIndex: 'title',
+        key: 'title',
+        render: (value: string, record) => (
+          <button
+            type="button"
+            className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
+            onClick={() => navigate(`/tasks/${record.id}`)}
+          >
+            {value}
+          </button>
+        ),
+      },
+      {
+        title: '截止时间',
+        dataIndex: 'dueDate',
+        key: 'dueDate',
+        width: 168,
+        render: (value: string) => (
+          <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
+        ),
+      },
+    ],
+    [navigate],
+  )
+
+  const taskColumns = useMemo<ColumnsType<TaskItem>>(
+    () => [
+      {
+        title: '任务标题',
+        dataIndex: 'title',
+        key: 'title',
+        width: 320,
+        render: (value: string, record) => (
+          <div className="min-w-0">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <Tag color={taskTypeColorMap[record.type]}>{taskTypeTextMap[record.type]}</Tag>
+              {!isTeacherView && record.currentUserSubmissionStatus === 'graded' ? (
+                <Tag color="green">已评分</Tag>
+              ) : null}
+              {isTeacherView && !record.isPublished ? <Tag>未发布</Tag> : null}
+            </div>
+            <button
+              type="button"
+              className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
+              onClick={() => navigate(`/tasks/${record.id}`)}
+            >
+              {value}
+            </button>
+          </div>
+        ),
+      },
+      {
+        title: '所属课程',
+        dataIndex: ['course', 'title'],
+        key: 'course',
+        width: 160,
+        render: (_value, record) => record.course?.title || '-',
+      },
+      {
+        title: '截止时间',
+        dataIndex: 'dueDate',
+        key: 'dueDate',
+        width: 170,
+        render: (value: string) => (
+          <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
+        ),
+      },
+      {
+        title: isTeacherView ? '提交' : '状态',
+        key: 'statusSimple',
+        width: 110,
+        render: (_value, record) => {
+          if (isTeacherView) {
+            return `${record.submittedCount}/${record.assignedStudentCount}`
+          }
+
+          if (record.currentUserSubmissionStatus === 'not_submitted') {
+            return '未提交'
+          }
+
+          if (record.currentUserSubmissionStatus === 'graded') {
+            return `已评分 ${record.currentUserScore ?? 0}`
+          }
+
+          return '已提交'
+        },
+      },
+      ...(isTeacherView
+        ? [
+            {
+              title: '操作',
+              key: 'actions',
+              fixed: 'right' as const,
+              width: 72,
+              render: (_value: unknown, record: TaskItem) => (
+                <div onClick={(event) => event.stopPropagation()}>
+                  <Dropdown menu={{ items: actionItems(record) }} trigger={['click']}>
+                    <Button
+                      icon={<MoreOutlined />}
+                      type="text"
+                      shape="circle"
+                      className="h-10 w-10 rounded-full border border-[rgba(28,25,23,0.06)] bg-white/88 text-stone-500"
+                    />
+                  </Dropdown>
+                </div>
+              ),
+            },
+          ]
+        : []),
+    ],
+    [actionItems, isTeacherView, navigate],
+  )
 
   if (isLoading && !taskPage) {
     return <PageLoading />
+  }
+
+  const handleTaskTableChange = (pagination: TablePaginationConfig) => {
+    setPage(pagination.current ?? 1)
+    setPageSize(pagination.pageSize ?? 10)
   }
 
   return (
@@ -172,61 +287,55 @@ export default function TasksPage() {
               <div className="app-section-heading">
                 <h2 className="app-section-title">待批改</h2>
               </div>
-              <div className="space-y-3">
-                {pendingGradingItems.length === 0 ? (
-                  <div className="text-sm text-stone-500">当前没有待批改的提交。</div>
-                ) : (
-                  pendingGradingItems.map((item) => (
-                    <PendingGradingCard key={item.submissionId} item={item} onOpen={(taskId) => navigate(`/tasks/${taskId}`)} />
-                  ))
-                )}
-              </div>
+              {pendingGradingItems.length === 0 ? (
+                <div className="mt-4">
+                  <Empty description="当前没有待批改的提交。" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                </div>
+              ) : (
+                <Table<PendingGradingItem>
+                  className="mt-4"
+                  size="small"
+                  rowKey="submissionId"
+                  dataSource={pendingGradingItems}
+                  columns={pendingGradingColumns}
+                  pagination={false}
+                  scroll={{ x: 360 }}
+                />
+              )}
             </section>
           ) : (
             <section className="app-panel px-5 py-5">
               <div className="app-section-heading">
                 <h2 className="app-section-title">优先关注</h2>
               </div>
-              <div className="space-y-3">
-                {focusTasks.length === 0 ? (
-                  <div className="text-sm text-stone-500">当前暂无可关注任务。</div>
-                ) : (
-                  focusTasks.map((task) => (
-                    <button
-                      key={task.id}
-                      type="button"
-                      onClick={() => navigate(`/tasks/${task.id}`)}
-                      className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
-                    >
-                      <div className="text-sm font-medium text-stone-900">{task.title}</div>
-                      <div className="mt-1 text-xs leading-5 text-stone-500">
-                        {task.course?.title || '未命名课程'} · 截止 {formatDateTime(task.dueDate)}
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
+              {focusTasks.length === 0 ? (
+                <div className="mt-4">
+                  <Empty description="当前暂无可关注任务。" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                </div>
+              ) : (
+                <Table<TaskItem>
+                  className="mt-4"
+                  size="small"
+                  rowKey="id"
+                  dataSource={focusTasks}
+                  columns={focusTaskColumns}
+                  pagination={false}
+                  scroll={{ x: 360 }}
+                />
+              )}
             </section>
           )
         }
       >
         <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-          <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
+          <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                任务中心
-              </div>
-              <h1 className="mt-3 text-[clamp(28px,3vw,42px)] font-semibold tracking-[-0.04em] text-stone-900">
-                {isTeacherView ? '管理任务与批改进度' : '查看任务与提交状态'}
+              <h1 className="text-[clamp(26px,2.7vw,36px)] font-semibold tracking-[-0.04em] text-stone-900">
+                {isTeacherView ? '任务管理' : '我的任务'}
               </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
-                {isTeacherView
-                  ? '这里会汇总课程任务、待批改提交和整体进度，你可以直接进入详情页继续评分。'
-                  : '这里会汇总你的课程任务、提交状态和评分结果，点击任务即可继续作答或查看反馈。'}
-              </p>
             </div>
 
-            <div className="flex w-full flex-col gap-3 2xl:w-[340px]">
+            <div className="flex w-full flex-col gap-3 2xl:w-[720px]">
               <Input.Search
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
@@ -236,7 +345,7 @@ export default function TasksPage() {
                 }}
                 placeholder="搜索任务标题或描述"
               />
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <Select
                   allowClear
                   placeholder="全部课程"
@@ -263,27 +372,17 @@ export default function TasksPage() {
                     setSelectedType(value)
                   }}
                 />
+                {isTeacherView ? (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate('/tasks/create')}
+                  >
+                    创建任务
+                  </Button>
+                ) : null}
               </div>
-              {isTeacherView ? (
-                <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => navigate('/tasks/create')}>
-                  创建任务
-                </Button>
-              ) : null}
             </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[24px] border border-[var(--lms-color-border)] bg-white/92 px-5 py-5 shadow-[0_12px_30px_rgba(28,25,23,0.05)]"
-              >
-                <div className="text-sm text-stone-500">{item.label}</div>
-                <div className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
-                  {item.value}
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -293,117 +392,24 @@ export default function TasksPage() {
             {isFetching ? <span className="text-sm text-stone-400">刷新中…</span> : null}
           </div>
 
-          {tasks.length === 0 ? (
-            <div className="px-5 py-10 sm:px-6 xl:px-7">
-              <Empty description="当前筛选下暂无任务" />
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--lms-color-border)]">
-              {tasks.map((task) => (
-                <div
-                  key={task.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/tasks/${task.id}`)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      navigate(`/tasks/${task.id}`)
-                    }
-                  }}
-                  className="group grid cursor-pointer gap-5 px-5 py-5 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] xl:px-7"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Tag color={taskTypeColorMap[task.type]}>{taskTypeTextMap[task.type]}</Tag>
-                          <span className="rounded-full border border-[var(--lms-color-border)] px-3 py-1 text-[11px] font-medium text-stone-500">
-                            {task.assignmentMode === 'selected' ? '定向任务' : '全班任务'}
-                          </span>
-                          <span
-                            className={[
-                              'rounded-full px-3 py-1 text-[11px] font-medium',
-                              task.isPublished ? 'bg-emerald-50 text-emerald-600' : 'bg-stone-100 text-stone-500',
-                            ].join(' ')}
-                          >
-                            {task.isPublished ? '已发布' : '未发布'}
-                          </span>
-                        </div>
-                        <div className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-stone-900 transition group-hover:text-orange-600">
-                          {task.title}
-                        </div>
-                        <div className="mt-2 max-w-3xl text-sm leading-6 text-stone-500">
-                          {task.description || '暂无任务说明'}
-                        </div>
-                      </div>
-
-                      {isTeacherView ? (
-                        <div onClick={(event) => event.stopPropagation()}>
-                          <Dropdown menu={{ items: actionItems(task) }} trigger={['click']}>
-                            <Button
-                              icon={<MoreOutlined />}
-                              type="text"
-                              shape="circle"
-                              className="h-10 w-10 rounded-full border border-[rgba(28,25,23,0.06)] bg-white/88 text-stone-500"
-                            />
-                          </Dropdown>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm text-stone-500 sm:grid-cols-4 xl:grid-cols-2">
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.16em] text-stone-400">课程</div>
-                      <div className="mt-2 font-medium text-stone-900">{task.course?.title || '-'}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.16em] text-stone-400">截止</div>
-                      <div className={`mt-2 font-medium ${getDueDateClass(task.dueDate)}`}>
-                        {formatDateTime(task.dueDate)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.16em] text-stone-400">提交</div>
-                      <div className="mt-2 font-medium text-stone-900">
-                        {task.submittedCount}/{task.assignedStudentCount}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs uppercase tracking-[0.16em] text-stone-400">
-                        {isTeacherView ? '已评分' : '我的状态'}
-                      </div>
-                      <div className="mt-2 font-medium text-stone-900">
-                        {isTeacherView
-                          ? `${task.gradedCount} 份`
-                          : task.currentUserSubmissionStatus === 'not_submitted'
-                            ? '未提交'
-                            : task.currentUserSubmissionStatus === 'graded'
-                              ? `已评分 ${task.currentUserScore ?? 0}`
-                              : '已提交'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {total > 0 ? (
-            <div className="flex justify-end px-5 py-5 sm:px-6 xl:px-7">
-              <Pagination
-                current={page}
-                pageSize={pageSize}
-                total={total}
-                showSizeChanger
-                onChange={(nextPage, nextPageSize) => {
-                  setPage(nextPage)
-                  setPageSize(nextPageSize)
-                }}
-              />
-            </div>
-          ) : null}
+          <div className="px-5 pb-5 sm:px-6 xl:px-7">
+            <Table<TaskItem>
+              size="middle"
+              rowKey="id"
+              dataSource={tasks}
+              columns={taskColumns}
+              loading={isFetching && Boolean(taskPage)}
+              locale={{ emptyText: '当前筛选下暂无任务' }}
+              scroll={{ x: 1180 }}
+              pagination={{
+                current: page,
+                pageSize,
+                total,
+                showSizeChanger: true,
+              }}
+              onChange={handleTaskTableChange}
+            />
+          </div>
         </section>
       </WorkspaceLayout>
 

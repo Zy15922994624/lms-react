@@ -3,6 +3,7 @@ import type { UserRole } from '@/shared/types/user'
 export const ROUTES = {
   LOGIN: '/login',
   HOME: '/',
+  STUDENT_HOME: '/dashboard',
   TEACHER_HOME: '/teacher-home',
   TASKS: '/tasks',
   TASK_CREATE: '/tasks/create',
@@ -23,5 +24,5 @@ export const ROUTES = {
 } as const
 
 export function getRoleHomePath(role: UserRole | null): string {
-  return role === 'teacher' || role === 'admin' ? ROUTES.TEACHER_HOME : ROUTES.HOME
+  return role === 'teacher' || role === 'admin' ? ROUTES.TEACHER_HOME : ROUTES.STUDENT_HOME
 }

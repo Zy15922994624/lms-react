@@ -157,10 +157,10 @@ export default function TaskGradingModal({
     >
       {submission ? (
         <div className="space-y-4">
-          <div className="rounded-[20px] bg-stone-50 px-4 py-4 text-sm text-stone-600">
+          <div className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-3 text-sm text-stone-600">
             <div>提交时间：{formatDateTime(submission.submittedAt)}</div>
             {submission.content ? (
-              <div className="mt-3 whitespace-pre-wrap leading-7">{submission.content}</div>
+              <div className="mt-2 whitespace-pre-wrap leading-7">{submission.content}</div>
             ) : null}
           </div>
 
@@ -172,7 +172,7 @@ export default function TaskGradingModal({
                   href={attachment.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded-2xl border border-[var(--lms-color-border)] px-4 py-3 text-sm text-stone-600"
+                  className="block rounded-[16px] border border-[var(--lms-color-border)] px-4 py-3 text-sm text-stone-600"
                 >
                   {attachment.name || attachment.originalName}
                 </a>
@@ -183,7 +183,7 @@ export default function TaskGradingModal({
           <Form form={form} layout="vertical">
             {isQuestionTask ? (
               <>
-                <div className="rounded-[20px] bg-stone-50 px-4 py-4 text-sm text-stone-600">
+                <div className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-3 text-sm text-stone-600">
                   当前按题合计得分：
                   <span className="font-semibold text-stone-900"> {previewScore}</span> / {task.totalScore}
                 </div>
@@ -195,43 +195,35 @@ export default function TaskGradingModal({
                     return (
                       <article
                         key={question.id}
-                        className="rounded-[24px] border border-[var(--lms-color-border)] bg-stone-50/70 px-4 py-4"
+                        className="rounded-[18px] border border-[var(--lms-color-border)] bg-stone-50/70 px-4 py-4"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <Tag color="blue">{questionTypeTextMap[question.type]}</Tag>
-                          <Tag>{question.score} 分</Tag>
-                          <Tag color="gold">自动分：{answer?.autoScore ?? 0}</Tag>
+                          <span className="text-xs text-stone-400">{question.score} 分</span>
+                          <span className="text-xs text-stone-400">自动分 {answer?.autoScore ?? 0}</span>
                         </div>
 
-                        <h3 className="mt-3 text-base font-semibold text-stone-900">
-                          第 {index + 1} 题 · {question.title}
-                        </h3>
+                        <h3 className="mt-3 text-base font-semibold text-stone-900">{question.title}</h3>
                         {question.description ? (
                           <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-500">
                             {question.description}
                           </p>
                         ) : null}
 
-                        <div className="mt-4 rounded-[20px] bg-white px-4 py-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                            学生答案
-                          </div>
+                        <div className="mt-4 rounded-[16px] bg-white px-4 py-4">
+                          <div className="text-xs font-semibold text-stone-400">学生答案</div>
                           <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
                             {formatAnswerDisplay(answer?.answer)}
                           </div>
 
-                          <div className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                            参考答案
-                          </div>
+                          <div className="mt-4 text-xs font-semibold text-stone-400">参考答案</div>
                           <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
                             {formatAnswerDisplay(question.answer)}
                           </div>
 
                           {question.analysis ? (
                             <>
-                              <div className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                                解析
-                              </div>
+                              <div className="mt-4 text-xs font-semibold text-stone-400">解析</div>
                               <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
                                 {question.analysis}
                               </div>

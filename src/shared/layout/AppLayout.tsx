@@ -31,7 +31,7 @@ const roleWorkspaceText: Record<UserRole, string> = {
 }
 
 const menuKeyToRoute: Record<string, string> = {
-  dashboard: ROUTES.HOME,
+  dashboard: ROUTES.STUDENT_HOME,
   'teacher-home': ROUTES.TEACHER_HOME,
   tasks: ROUTES.TASKS,
   courses: ROUTES.COURSES,

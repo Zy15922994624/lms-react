@@ -1,6 +1,8 @@
 import client from '@/shared/api/client'
 import type { CourseDetail, CourseFormValues, CourseMembersPage, CoursesPage } from '@/features/courses/types/course'
 
+const COURSE_MEMBERS_FETCH_PAGE_SIZE = 100
+
 export const courseService = {
   async getCourses(includeArchived = true, page = 1, pageSize = 10) {
     return (await client.get<CoursesPage>('/courses', {
@@ -16,6 +18,30 @@ export const courseService = {
     return (await client.get<CourseMembersPage>(`/courses/${courseId}/members`, {
       params: { page, pageSize },
     })) as unknown as CourseMembersPage
+  },
+
+  async getAllCourseStudents(courseId: string) {
+    const firstPage = await this.getCourseMembers(
+      courseId,
+      1,
+      COURSE_MEMBERS_FETCH_PAGE_SIZE,
+    )
+
+    if (firstPage.total <= firstPage.items.length) {
+      return firstPage.items
+    }
+
+    const totalPages = Math.ceil(firstPage.total / COURSE_MEMBERS_FETCH_PAGE_SIZE)
+    const remainingPages = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_value, index) =>
+        this.getCourseMembers(courseId, index + 2, COURSE_MEMBERS_FETCH_PAGE_SIZE),
+      ),
+    )
+
+    return [
+      ...firstPage.items,
+      ...remainingPages.flatMap((pageData) => pageData.items),
+    ]
   },
 
   async removeCourseMember(courseId: string, userId: string) {
