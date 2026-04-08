@@ -4,12 +4,12 @@ import { Button, Dropdown, Empty, Input, Modal, Pagination, Select, Tag } from '
 import type { MenuProps } from 'antd'
 import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { courseService } from '@/features/courses/services/course.service'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import { courseService } from '@/features/courses/services/course.service'
 import { taskService } from '@/features/tasks/services/task.service'
-import type { TaskItem, TaskType } from '@/features/tasks/types/task'
-import { uiMessage } from '@/shared/components/feedback/message'
+import type { PendingGradingItem, TaskItem, TaskType } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime, getDueDateClass, isOverdue } from '@/shared/utils/date'
 
@@ -25,6 +25,28 @@ const taskTypeColorMap: Record<TaskType, string> = {
   quiz: 'orange',
   project: 'blue',
   reading: 'purple',
+}
+
+function PendingGradingCard({ item, onOpen }: { item: PendingGradingItem; onOpen: (taskId: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(item.taskId)}
+      className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
+    >
+      <div className="flex items-center gap-2">
+        <Tag color={taskTypeColorMap[item.taskType]}>{taskTypeTextMap[item.taskType]}</Tag>
+        <span className="text-xs text-stone-400">待批改</span>
+      </div>
+      <div className="mt-3 text-sm font-medium text-stone-900">{item.taskTitle}</div>
+      <div className="mt-2 text-xs leading-5 text-stone-500">
+        {item.courseTitle || '未命名课程'} · {item.studentName}
+      </div>
+      <div className="mt-1 text-xs leading-5 text-stone-400">
+        提交于 {formatDateTime(item.submittedAt)}
+      </div>
+    </button>
+  )
 }
 
 export default function TasksPage() {
@@ -58,12 +80,21 @@ export default function TasksPage() {
       }),
   })
 
+  const { data: pendingGradingItems = [] } = useQuery({
+    queryKey: ['tasks', 'pending-grading'],
+    queryFn: () => taskService.getPendingGrading(),
+    enabled: isTeacherView,
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (taskId: string) => taskService.deleteTask(taskId),
     onSuccess: async () => {
       uiMessage.success('任务已删除')
       setPendingDeleteTask(null)
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks', 'pending-grading'] }),
+      ])
     },
     onError: () => {
       uiMessage.error('删除任务失败')
@@ -76,20 +107,34 @@ export default function TasksPage() {
   const metrics = useMemo(() => {
     const publishedCount = tasks.filter((task) => task.isPublished).length
     const overdueCount = tasks.filter((task) => isOverdue(task.dueDate)).length
-    const waitingGradeCount = tasks.reduce((sum, task) => sum + Math.max(task.submittedCount - task.gradedCount, 0), 0)
+    const waitingGradeCount = tasks.reduce(
+      (sum, task) => sum + Math.max(task.submittedCount - task.gradedCount, 0),
+      0,
+    )
+    const gradedForStudent = tasks.filter((task) => task.currentUserSubmissionStatus === 'graded').length
 
-    return [
-      { label: '当前页任务数', value: tasks.length },
-      { label: '已发布', value: publishedCount },
-      { label: '待批改', value: waitingGradeCount },
-      { label: '已过期', value: overdueCount },
-    ]
-  }, [tasks])
+    return isTeacherView
+      ? [
+          { label: '当前结果数', value: total || tasks.length },
+          { label: '已发布', value: publishedCount },
+          { label: '待批改', value: waitingGradeCount },
+          { label: '已过期', value: overdueCount },
+        ]
+      : [
+          { label: '当前结果数', value: total || tasks.length },
+          { label: '已提交', value: tasks.filter((task) => task.currentUserSubmissionStatus !== 'not_submitted').length },
+          { label: '已评分', value: gradedForStudent },
+          { label: '已过期', value: overdueCount },
+        ]
+  }, [isTeacherView, tasks, total])
 
   const focusTasks = useMemo(
     () =>
       [...tasks]
-        .sort((left, right) => right.submittedCount - right.gradedCount - (left.submittedCount - left.gradedCount))
+        .sort(
+          (left, right) =>
+            right.submittedCount - right.gradedCount - (left.submittedCount - left.gradedCount),
+        )
         .slice(0, 4),
     [tasks],
   )
@@ -122,30 +167,47 @@ export default function TasksPage() {
       <WorkspaceLayout
         preset="dashboard"
         aside={
-          <section className="app-panel px-5 py-5">
-            <div className="app-section-heading">
-              <h2 className="app-section-title">优先关注</h2>
-            </div>
-            <div className="space-y-3">
-              {focusTasks.length === 0 ? (
-                <div className="text-sm text-stone-500">当前暂无可关注任务。</div>
-              ) : (
-                focusTasks.map((task) => (
-                  <button
-                    key={task.id}
-                    type="button"
-                    onClick={() => navigate(`/tasks/${task.id}`)}
-                    className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
-                  >
-                    <div className="text-sm font-medium text-stone-900">{task.title}</div>
-                    <div className="mt-1 text-xs leading-5 text-stone-500">
-                      {task.course?.title || '未命名课程'} · 截止 {formatDateTime(task.dueDate)}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </section>
+          isTeacherView ? (
+            <section className="app-panel px-5 py-5">
+              <div className="app-section-heading">
+                <h2 className="app-section-title">待批改</h2>
+              </div>
+              <div className="space-y-3">
+                {pendingGradingItems.length === 0 ? (
+                  <div className="text-sm text-stone-500">当前没有待批改的提交。</div>
+                ) : (
+                  pendingGradingItems.map((item) => (
+                    <PendingGradingCard key={item.submissionId} item={item} onOpen={(taskId) => navigate(`/tasks/${taskId}`)} />
+                  ))
+                )}
+              </div>
+            </section>
+          ) : (
+            <section className="app-panel px-5 py-5">
+              <div className="app-section-heading">
+                <h2 className="app-section-title">优先关注</h2>
+              </div>
+              <div className="space-y-3">
+                {focusTasks.length === 0 ? (
+                  <div className="text-sm text-stone-500">当前暂无可关注任务。</div>
+                ) : (
+                  focusTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => navigate(`/tasks/${task.id}`)}
+                      className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
+                    >
+                      <div className="text-sm font-medium text-stone-900">{task.title}</div>
+                      <div className="mt-1 text-xs leading-5 text-stone-500">
+                        {task.course?.title || '未命名课程'} · 截止 {formatDateTime(task.dueDate)}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </section>
+          )
         }
       >
         <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
@@ -158,7 +220,9 @@ export default function TasksPage() {
                 {isTeacherView ? '管理任务与批改进度' : '查看任务与提交状态'}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
-                首阶段任务模块已经独立成中心页，后续题目编排和自动评分能力会继续叠加到这里。
+                {isTeacherView
+                  ? '这里会汇总课程任务、待批改提交和整体进度，你可以直接进入详情页继续评分。'
+                  : '这里会汇总你的课程任务、提交状态和评分结果，点击任务即可继续作答或查看反馈。'}
               </p>
             </div>
 

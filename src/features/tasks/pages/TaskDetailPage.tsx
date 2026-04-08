@@ -1,79 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Button,
-  Card,
-  Descriptions,
-  Empty,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Pagination,
-  Popconfirm,
-  Table,
-  Tag,
-  Upload,
-} from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
+import { Button, Descriptions, Empty, Pagination, Popconfirm, Table, Tag } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import TaskQuestionList from '@/features/tasks/components/TaskQuestionList'
+import TaskGradingModal from '@/features/tasks/components/TaskGradingModal'
+import TaskSubmissionPanel from '@/features/tasks/components/TaskSubmissionPanel'
 import { taskService } from '@/features/tasks/services/task.service'
-import type {
-  GradeTaskSubmissionPayload,
-  TaskDetail,
-  TaskFile,
-  TaskQuestion,
-  TaskSubmission,
-} from '@/features/tasks/types/task'
-import { uploadService } from '@/shared/api/upload.service'
+import type { GradeTaskSubmissionPayload, TaskDetail, TaskSubmission } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
-import { formatDate, formatDateTime, getDueDateClass } from '@/shared/utils/date'
-
-type AttachmentUploadFile = UploadFile & { taskFile?: TaskFile }
+import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
 function supportsQuestionPreview(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
-}
-
-function toUploadFileList(attachments: TaskFile[] = []): AttachmentUploadFile[] {
-  return attachments.map((attachment, index) => ({
-    uid: `${attachment.key}-${index}`,
-    name: attachment.name || attachment.originalName,
-    status: 'done',
-    url: attachment.url,
-    taskFile: attachment,
-  }))
-}
-
-async function uploadAttachments(files: AttachmentUploadFile[]) {
-  const result: TaskFile[] = []
-
-  for (const file of files) {
-    if (file.taskFile) {
-      result.push(file.taskFile)
-      continue
-    }
-
-    if (!file.originFileObj) {
-      continue
-    }
-
-    const uploaded = await uploadService.uploadSingle(file.originFileObj, 'attachment')
-    result.push({
-      key: uploaded.key,
-      url: uploaded.url,
-      originalName: uploaded.originalName,
-      size: uploaded.size,
-      mimeType: uploaded.mimeType,
-      name: file.originFileObj.name,
-    })
-  }
-
-  return result
 }
 
 export default function TaskDetailPage() {
@@ -86,7 +28,6 @@ export default function TaskDetailPage() {
   const [submissionPage, setSubmissionPage] = useState(1)
   const [submissionPageSize, setSubmissionPageSize] = useState(10)
   const [gradingTarget, setGradingTarget] = useState<TaskSubmission | null>(null)
-  const [gradeForm] = Form.useForm()
 
   const { data: task, isLoading: isTaskLoading } = useQuery({
     queryKey: ['task', id],
@@ -142,14 +83,13 @@ export default function TaskDetailPage() {
     },
   })
 
-  const teacherSubmissionColumns = useMemo(
+  const teacherSubmissionColumns = useMemo<ColumnsType<TaskSubmission>>(
     () => [
       {
         title: '学生',
         dataIndex: 'user',
         key: 'user',
-        render: (_value: unknown, record: TaskSubmission) =>
-          record.user?.fullName || record.user?.username || '未命名学生',
+        render: (_value, record) => record.user?.fullName || record.user?.username || '未命名学生',
       },
       {
         title: '提交时间',
@@ -171,29 +111,19 @@ export default function TaskDetailPage() {
         title: '得分',
         dataIndex: 'score',
         key: 'score',
-        render: (_value: unknown, record: TaskSubmission) =>
-          record.score !== undefined ? `${record.score}/${record.maxScore}` : '-',
+        render: (_value, record) => (record.score !== undefined ? `${record.score}/${record.maxScore}` : '-'),
       },
       {
         title: '操作',
         key: 'actions',
-        render: (_value: unknown, record: TaskSubmission) => (
-          <Button
-            type="link"
-            onClick={() => {
-              setGradingTarget(record)
-              gradeForm.setFieldsValue({
-                score: record.score ?? 0,
-                feedback: record.feedback ?? '',
-              })
-            }}
-          >
+        render: (_value, record) => (
+          <Button type="link" onClick={() => setGradingTarget(record)}>
             {record.status === 'graded' ? '查看评分' : '去评分'}
           </Button>
         ),
       },
     ],
-    [gradeForm],
+    [],
   )
 
   if (
@@ -298,7 +228,7 @@ export default function TaskDetailPage() {
               <h1 className="mt-4 text-[clamp(28px,3vw,42px)] font-semibold tracking-[-0.04em] text-stone-900">
                 {task.title}
               </h1>
-              <p className="mt-3 max-w-4xl text-sm leading-7 text-stone-500">
+              <p className="mt-3 max-w-4xl whitespace-pre-wrap text-sm leading-7 text-stone-500">
                 {task.description || '暂无任务说明。'}
               </p>
             </div>
@@ -321,17 +251,17 @@ export default function TaskDetailPage() {
           </div>
         </section>
 
-        {shouldLoadQuestions ? (
+        {isTeacherView && shouldLoadQuestions ? (
           <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
             <div className="app-section-heading">
-              <h2 className="app-section-title">{isTeacherView ? '题目预览' : '任务题目'}</h2>
+              <h2 className="app-section-title">题目预览</h2>
             </div>
             <div className="mt-4">
               <TaskQuestionList
                 questions={taskQuestions}
                 loading={isQuestionsLoading}
-                showAnswer={isTeacherView}
-                emptyText={isTeacherView ? '当前还没有配置题目。' : '老师暂时还没有发布题目内容。'}
+                showAnswer
+                emptyText="当前还没有配置题目。"
               />
             </div>
           </section>
@@ -366,207 +296,37 @@ export default function TaskDetailPage() {
                 </div>
               </>
             ) : (
-              <Empty description="当前还没有学生提交" />
+              <Empty description="当前还没有学生提交。" />
             )}
           </section>
         ) : (
-          <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-              <Card bordered={false} className="rounded-[24px] bg-stone-50 shadow-none">
-                <div className="text-sm font-medium text-stone-900">提交说明</div>
-                <div className="mt-3 text-sm leading-7 text-stone-500">
-                  {task.type === 'reading'
-                    ? '阅读任务建议先浏览老师推荐的资源，再在右侧提交阅读总结或补充材料。'
-                    : shouldLoadQuestions
-                      ? '请先完成题目内容，再将答案整理到文本说明或附件中提交。后续会继续补充结构化答题体验。'
-                      : '项目或作业任务支持提交文本说明和附件材料，提交后老师可以直接查看并评分。'}
-                </div>
-                {submission?.status === 'graded' ? (
-                  <div className="mt-5 rounded-[20px] bg-white px-4 py-4">
-                    <div className="text-sm text-stone-500">评分结果</div>
-                    <div className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
-                      {submission.score ?? 0} / {submission.maxScore}
-                    </div>
-                    {submission.feedback ? (
-                      <div className="mt-3 text-sm leading-7 text-stone-500">{submission.feedback}</div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </Card>
-
-              <Card bordered={false} className="rounded-[24px] bg-white shadow-none">
-                <StudentSubmissionPanel
-                  key={submission?.id ?? `draft-${id}`}
-                  task={task}
-                  submission={submission}
-                  taskQuestions={taskQuestions}
-                  onSubmit={async (values) => {
-                    await taskService.submitTask(id, values)
-                    uiMessage.success('任务提交成功')
-                    await Promise.all([
-                      queryClient.invalidateQueries({ queryKey: ['task', id] }),
-                      queryClient.invalidateQueries({ queryKey: ['task-submission', id] }),
-                      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-                    ])
-                  }}
-                />
-              </Card>
-            </div>
-          </section>
+          <TaskSubmissionPanel
+            key={`${submission?.updatedAt ?? 'draft'}-${taskQuestions.map((item) => item.id).join(',')}`}
+            task={task}
+            submission={submission}
+            taskQuestions={taskQuestions}
+            onSubmit={async (values) => {
+              await taskService.submitTask(id, values)
+              uiMessage.success('任务提交成功')
+              await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['task', id] }),
+                queryClient.invalidateQueries({ queryKey: ['task-submission', id] }),
+                queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+              ])
+            }}
+          />
         )}
       </WorkspaceLayout>
 
-      <Modal
+      <TaskGradingModal
         open={Boolean(gradingTarget)}
-        title={gradingTarget ? `评分：${gradingTarget.user?.fullName || gradingTarget.user?.username || '学生'}` : '评分'}
-        okText="保存评分"
-        cancelText="取消"
-        okButtonProps={{ loading: gradeMutation.isPending }}
+        task={task}
+        submission={gradingTarget}
+        taskQuestions={taskQuestions}
+        loading={gradeMutation.isPending}
         onCancel={() => setGradingTarget(null)}
-        onOk={() => {
-          gradeForm
-            .validateFields()
-            .then((values) =>
-              gradeMutation.mutate({
-                studentId: gradingTarget!.userId,
-                score: Number(values.score),
-                feedback: values.feedback,
-              }),
-            )
-            .catch(() => undefined)
-        }}
-      >
-        {gradingTarget ? (
-          <div className="space-y-4">
-            <div className="rounded-[20px] bg-stone-50 px-4 py-4 text-sm text-stone-600">
-              <div>提交时间：{formatDateTime(gradingTarget.submittedAt)}</div>
-              {gradingTarget.content ? (
-                <div className="mt-3 whitespace-pre-wrap leading-7">{gradingTarget.content}</div>
-              ) : null}
-            </div>
-
-            {gradingTarget.attachments.length ? (
-              <div className="space-y-2">
-                {gradingTarget.attachments.map((attachment) => (
-                  <a
-                    key={attachment.key}
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-2xl border border-[var(--lms-color-border)] px-4 py-3 text-sm text-stone-600"
-                  >
-                    {attachment.name || attachment.originalName}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-
-            <Form form={gradeForm} layout="vertical">
-              <Form.Item
-                label="评分"
-                name="score"
-                rules={[{ required: true, message: '请输入评分' }]}
-              >
-                <InputNumber min={0} max={task.totalScore} className="w-full" />
-              </Form.Item>
-              <Form.Item label="反馈" name="feedback">
-                <Input.TextArea rows={4} placeholder="给学生的反馈建议" />
-              </Form.Item>
-            </Form>
-          </div>
-        ) : null}
-      </Modal>
+        onSubmit={(payload) => gradeMutation.mutate(payload)}
+      />
     </div>
-  )
-}
-
-interface StudentSubmissionPanelProps {
-  task: TaskDetail
-  submission: TaskSubmission | null | undefined
-  taskQuestions: TaskQuestion[]
-  onSubmit: (values: { content?: string; attachments: TaskFile[] }) => Promise<void>
-}
-
-function StudentSubmissionPanel({
-  task,
-  submission,
-  taskQuestions,
-  onSubmit,
-}: StudentSubmissionPanelProps) {
-  const [content, setContent] = useState(submission?.content ?? '')
-  const [fileList, setFileList] = useState<AttachmentUploadFile[]>(toUploadFileList(submission?.attachments ?? []))
-  const [uploading, setUploading] = useState(false)
-
-  const canEditSubmission = submission?.status !== 'graded'
-  const showQuestionTip = supportsQuestionPreview(task.type) && taskQuestions.length > 0
-
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const attachments = await uploadAttachments(fileList)
-      await onSubmit({
-        content: content.trim() || undefined,
-        attachments,
-      })
-    },
-    onMutate: () => setUploading(true),
-    onError: () => {
-      uiMessage.error('任务提交失败')
-    },
-    onSettled: () => setUploading(false),
-  })
-
-  return (
-    <Form layout="vertical" onFinish={() => submitMutation.mutate()}>
-      {showQuestionTip ? (
-        <div className="mb-4 rounded-[20px] bg-stone-50 px-4 py-4 text-sm leading-7 text-stone-500">
-          当前共有 {taskQuestions.length} 道题目。你可以先完成题目，再把答案整理到下方文本说明或附件中提交。
-        </div>
-      ) : null}
-
-      <Form.Item label="文本说明">
-        <Input.TextArea
-          rows={8}
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder="输入提交说明、项目总结或题目答案整理"
-          disabled={!canEditSubmission}
-        />
-      </Form.Item>
-      <Form.Item label="提交附件">
-        <Upload
-          multiple
-          fileList={fileList}
-          beforeUpload={(file) => {
-            setFileList((current) => [
-              ...current,
-              {
-                uid: `${file.uid}-${Date.now()}`,
-                name: file.name,
-                status: 'done',
-                originFileObj: file,
-              },
-            ])
-            return false
-          }}
-          onRemove={(file) => {
-            setFileList((current) => current.filter((item) => item.uid !== file.uid))
-          }}
-          disabled={!canEditSubmission}
-        >
-          <Button disabled={!canEditSubmission}>选择附件</Button>
-        </Upload>
-      </Form.Item>
-      <div className="flex items-center justify-between text-sm text-stone-400">
-        <span>截止日期：{formatDate(task.dueDate)}</span>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={submitMutation.isPending || uploading}
-          disabled={!canEditSubmission}
-        >
-          {submission ? '重新提交' : '提交任务'}
-        </Button>
-      </div>
-    </Form>
   )
 }

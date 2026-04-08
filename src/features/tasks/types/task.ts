@@ -65,12 +65,42 @@ export interface TaskDetail extends TaskItem {
   relatedResources: TaskResourceBrief[]
 }
 
+export interface TaskSubmissionAnswer {
+  questionId: string
+  answer?: unknown
+  autoScore: number
+  manualScore?: number | null
+  comments?: string
+}
+
+export interface TaskSubmissionRevision {
+  gradedBy?: string
+  score: number
+  feedback?: string
+  gradedAt: string
+}
+
+export interface PendingGradingItem {
+  submissionId: string
+  taskId: string
+  taskTitle: string
+  taskType: TaskType
+  courseId: string
+  courseTitle: string
+  studentId: string
+  studentName: string
+  submittedAt: string
+  dueDate: string
+  maxScore: number
+}
+
 export interface TaskSubmission {
   id: string
   taskId: string
   userId: string
   content?: string
   attachments: TaskFile[]
+  answers: TaskSubmissionAnswer[]
   submittedAt: string
   status: TaskSubmissionStatus
   score?: number
@@ -78,6 +108,7 @@ export interface TaskSubmission {
   feedback?: string
   gradedBy?: string
   gradedAt?: string | null
+  revisionHistory?: TaskSubmissionRevision[]
   user?: TaskUserBrief
   createdAt: string
   updatedAt: string
@@ -138,15 +169,29 @@ export interface TaskFormValues {
   attachments: TaskFile[]
 }
 
+export interface TaskSubmissionAnswerPayload {
+  questionId: string
+  answer?: unknown
+}
+
 export interface TaskSubmissionValues {
   content?: string
   attachments: TaskFile[]
+  answers?: TaskSubmissionAnswerPayload[]
+}
+
+export interface GradeTaskSubmissionAnswerPayload {
+  questionId: string
+  answer?: unknown
+  manualScore?: number
+  comments?: string
 }
 
 export interface GradeTaskSubmissionPayload {
   studentId: string
-  score: number
+  score?: number
   feedback?: string
+  answers?: GradeTaskSubmissionAnswerPayload[]
 }
 
 export interface AddTaskQuestionsFromBankPayload {

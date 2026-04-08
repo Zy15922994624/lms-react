@@ -2,6 +2,7 @@ import client from '@/shared/api/client'
 import type {
   AddTaskQuestionsFromBankPayload,
   GradeTaskSubmissionPayload,
+  PendingGradingItem,
   TaskDetail,
   TaskFormValues,
   TaskQuestion,
@@ -74,5 +75,9 @@ export const taskService = {
       `/tasks/${taskId}/submissions/grade`,
       payload,
     )) as unknown as TaskSubmission
+  },
+
+  async getPendingGrading() {
+    return (await client.get<PendingGradingItem[]>('/tasks/pending-grading')) as unknown as PendingGradingItem[]
   },
 }
