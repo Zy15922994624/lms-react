@@ -28,6 +28,10 @@ export function resolvePageWidthMode(pathname: string): PageWidthMode {
     return 'workspace'
   }
 
+  if (pathname === ROUTES.USERS || pathname.startsWith(`${ROUTES.USERS}/`)) {
+    return 'workspace'
+  }
+
   if (pathname.startsWith(`${ROUTES.COURSES}/`)) {
     return 'workspace'
   }

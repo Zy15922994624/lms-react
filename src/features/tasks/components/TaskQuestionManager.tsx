@@ -17,14 +17,14 @@ interface TaskQuestionManagerProps {
   task: TaskDetail
 }
 
-const questionTypeTextMap: Record<QuestionType, string> = {
+const questionTypeLabelMap: Record<QuestionType, string> = {
   single_choice: '单选题',
   multi_choice: '多选题',
   fill_text: '填空题',
   rich_text: '简答题',
 }
 
-function supportsQuestionDesign(taskType: TaskDetail['type']) {
+function supportsQuestionSelection(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
@@ -37,7 +37,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
-  const canConfigureQuestions = supportsQuestionDesign(task.type)
+  const canConfigureQuestions = supportsQuestionSelection(task.type)
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['task-questions', task.id],
@@ -67,11 +67,13 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       ),
     [questions],
   )
-  const questionTotalScore = useMemo(
+
+  const totalQuestionScore = useMemo(
     () => orderedQuestions.reduce((sum, item) => sum + item.score, 0),
     [orderedQuestions],
   )
-  const isQuestionScoreValid = questionTotalScore === 100
+
+  const isQuestionScoreValid = totalQuestionScore === 100
 
   const addMutation = useMutation({
     mutationFn: (questionBankIds: string[]) =>
@@ -87,7 +89,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       ])
     },
     onError: () => {
-      uiMessage.error('加入任务失败')
+      uiMessage.error('加入题目失败')
     },
   })
 
@@ -161,7 +163,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       dataIndex: 'type',
       key: 'type',
       width: 110,
-      render: (type: QuestionType) => <Tag>{questionTypeTextMap[type]}</Tag>,
+      render: (type: QuestionType) => <Tag>{questionTypeLabelMap[type]}</Tag>,
     },
     {
       title: '分值',
@@ -174,7 +176,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       key: 'alreadyAdded',
       width: 120,
       render: (_value, item) =>
-        item.alreadyAdded ? <Tag color="blue">已加入</Tag> : <Tag color="default">可添加</Tag>,
+        item.alreadyAdded ? <Tag color="blue">已加入</Tag> : <Tag>可添加</Tag>,
     },
   ]
 
@@ -206,9 +208,9 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="app-section-heading !mb-0">
-            <h2 className="app-section-title">选题</h2>
+            <h2 className="app-section-title">题目</h2>
             <p className={`mt-2 text-sm ${isQuestionScoreValid ? 'text-stone-500' : 'text-rose-500'}`}>
-              当前题目合计 {questionTotalScore}/100 分
+              当前题目总分：{totalQuestionScore}/100
               {isQuestionScoreValid ? '' : '，请继续调整'}
             </p>
           </div>
@@ -222,7 +224,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
             questions={orderedQuestions}
             loading={isLoading}
             showAnswer
-            emptyText="还没有题目。"
+            emptyText="暂无题目"
             onMoveUp={(questionId) => void handleMove(questionId, -1)}
             onMoveDown={(questionId) => void handleMove(questionId, 1)}
             onDelete={(questionId) => void deleteMutation.mutateAsync(questionId)}
@@ -249,7 +251,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       >
         <div className="mb-4 flex flex-col gap-3 md:flex-row">
           <Input.Search
-            placeholder="搜索题干或说明"
+            placeholder="搜索题目或描述"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             onSearch={(value) => setSearchKeyword(value.trim())}

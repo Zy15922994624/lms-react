@@ -14,6 +14,7 @@ import TasksPage from '@/features/tasks/pages/TasksPage'
 import TaskCreatePage from '@/features/tasks/pages/TaskCreatePage'
 import TaskDetailPage from '@/features/tasks/pages/TaskDetailPage'
 import TaskEditPage from '@/features/tasks/pages/TaskEditPage'
+import UsersPage from '@/features/users/pages/UsersPage'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '@/shared/layout/AppLayout'
 import PageLoading from '@/shared/components/feedback/PageLoading'
@@ -137,6 +138,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute roles={['teacher', 'admin']}>
                 <QuestionBankPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <UsersPage />
               </ProtectedRoute>
             }
           />

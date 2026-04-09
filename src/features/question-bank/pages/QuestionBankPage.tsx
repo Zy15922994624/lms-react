@@ -2,18 +2,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
-  Dropdown,
   Input,
   Pagination,
   Popconfirm,
   Select,
-  Space,
+  Segmented,
   Spin,
   Table,
   Tag,
 } from 'antd'
 import type { TableColumnsType } from 'antd'
-import { DownOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { courseService } from '@/features/courses/services/course.service'
 import type { CourseSummary } from '@/features/courses/types/course'
 import QuestionBankFormModal from '@/features/question-bank/components/QuestionBankFormModal'
@@ -42,17 +41,6 @@ const questionTypeColorMap: Record<QuestionType, string> = {
   fill_text: 'purple',
   rich_text: 'blue',
 }
-
-const questionTypeBackgroundMap: Record<QuestionType, string> = {
-  single_choice: 'bg-emerald-50 text-emerald-700',
-  multi_choice: 'bg-orange-50 text-orange-700',
-  fill_text: 'bg-violet-50 text-violet-700',
-  rich_text: 'bg-sky-50 text-sky-700',
-}
-
-const questionBankHeroPadding = 'px-5 py-4 sm:px-6 sm:py-5 xl:px-7 xl:py-5 2xl:px-8 2xl:py-6'
-const questionBankSectionPadding = 'px-5 py-5 sm:px-6 sm:py-5 xl:px-7 xl:py-6 2xl:px-8'
-const questionBankAsidePadding = 'px-4 py-4 xl:px-5 xl:py-5 2xl:px-6 2xl:py-5'
 
 function summarizeTypeCount(items: QuestionBankItem[]) {
   return items.reduce(
@@ -263,44 +251,6 @@ export default function QuestionBankPage() {
     setSearchKeyword(value.trim())
   }
 
-  const importMenu = {
-    items: [
-      {
-        key: 'template',
-        label: '下载模板',
-        icon: <DownloadOutlined />,
-      },
-      {
-        key: 'create',
-        label: '手动录入',
-        icon: <PlusOutlined />,
-      },
-    ],
-    onClick: ({ key }: { key: string }) => {
-      if (key === 'create') {
-        openCreateModal()
-        return
-      }
-      void handleDownloadTemplate()
-    },
-  }
-
-  const handleDownloadTemplate = async () => {
-    try {
-      const blob = await questionBankService.downloadTemplate()
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = '题库导入模板.xlsx'
-      document.body.appendChild(anchor)
-      anchor.click()
-      anchor.remove()
-      URL.revokeObjectURL(url)
-    } catch {
-      uiMessage.error('模板下载失败')
-    }
-  }
-
   const handleSubmit = async (values: QuestionBankFormValues) => {
     if (editingQuestion) {
       await updateMutation.mutateAsync(values)
@@ -329,26 +279,22 @@ export default function QuestionBankPage() {
     <div className="space-y-6 lg:space-y-8">
       <WorkspaceLayout
         preset="dashboard"
-        mainClassName="space-y-5 2xl:space-y-6"
+        mainClassName="app-panel overflow-hidden"
         aside={
-          <section
-            className={`${questionBankAsidePadding} rounded-[26px] border border-[var(--lms-color-border)] bg-white/96 shadow-[0_20px_48px_rgba(28,25,23,0.07)]`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm font-semibold text-stone-500">题型分布</div>
-              <div className="text-sm text-stone-500">
-                {selectedCourse ? selectedCourse.title : '全部课程'} · {total} 题
-              </div>
+          <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-stone-900">题型统计</h2>
+              <div className="text-sm text-stone-500">{selectedCourse ? selectedCourse.title : '全部课程'}</div>
             </div>
-            <div className="mt-3 space-y-2.5 text-sm text-stone-700">
+            <div className="mt-4 space-y-2.5">
               {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map(
                 (type) => (
                   <div
                     key={type}
-                    className="flex items-center justify-between rounded-2xl bg-stone-50 px-4 py-2.5"
+                    className="flex items-center justify-between rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-3 text-sm"
                   >
-                    <span>{questionTypeTextMap[type]}</span>
-                    <strong className="text-stone-950">{currentPageTypeCountMap[type]}</strong>
+                    <span className="text-stone-600">{questionTypeTextMap[type]}</span>
+                    <strong className="text-stone-900">{currentPageTypeCountMap[type]}</strong>
                   </div>
                 ),
               )}
@@ -356,43 +302,21 @@ export default function QuestionBankPage() {
           </section>
         }
       >
-        <section
-          className={`${questionBankHeroPadding} rounded-[30px] border border-[rgba(255,107,53,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(255,251,247,0.96)_100%)] shadow-[0_24px_60px_rgba(28,25,23,0.07)]`}
-        >
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-              <div className="min-w-0 w-full space-y-2">
-                <h1 className="text-[clamp(2.1rem,2.7vw,3rem)] font-semibold leading-[1.05] tracking-[-0.05em] text-stone-950 md:whitespace-nowrap">
-                  题库管理
-                </h1>
-                <div className="text-base text-stone-500">共 {total} 题</div>
-              </div>
-              <Space.Compact size="large" className="shrink-0 md:justify-self-end">
-                <Button type="primary" size="large" onClick={() => setIsImportModalOpen(true)}>
-                  <span className="inline-flex items-center gap-2">
-                    <UploadOutlined />
-                    Excel 导入
-                  </span>
-                </Button>
-                <Dropdown trigger={['click']} menu={importMenu}>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<DownOutlined />}
-                    aria-label="更多导入操作"
-                  />
-                </Dropdown>
-              </Space.Compact>
+        <div className="border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8 xl:px-9 xl:py-6 2xl:px-10">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-[-0.03em] text-stone-900">题库</h1>
+              <div className="mt-1 text-sm text-stone-500">共 {total} 道题</div>
             </div>
 
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="flex flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
               <Input.Search
                 allowClear
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 onSearch={handleSearch}
                 placeholder="搜索题目"
-                className="w-full"
+                className="xl:w-[280px] 2xl:w-[320px]"
               />
               <Select
                 value={selectedCourseId}
@@ -400,7 +324,7 @@ export default function QuestionBankPage() {
                   setCurrentPage(1)
                   setSelectedCourseId(value)
                 }}
-                className="w-full"
+                className="xl:w-[220px]"
                 options={[
                   { label: '全部课程', value: 'all' },
                   ...courses.map((course: CourseSummary) => ({
@@ -409,34 +333,34 @@ export default function QuestionBankPage() {
                   })),
                 ]}
               />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              {(['single_choice', 'multi_choice', 'fill_text', 'rich_text'] as QuestionType[]).map(
-                (type) => {
-                  const selected = selectedType === type
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`rounded-2xl px-3 py-1.5 text-sm transition ${selected ? 'bg-[var(--lms-color-primary)] text-white shadow-[0_10px_20px_rgba(255,107,53,0.18)]' : questionTypeBackgroundMap[type]}`}
-                      onClick={() => {
-                        setCurrentPage(1)
-                        setSelectedType(selected ? 'all' : type)
-                      }}
-                    >
-                      {questionTypeTextMap[type]}
-                    </button>
-                  )
-                },
-              )}
+              <Button icon={<UploadOutlined />} onClick={() => setIsImportModalOpen(true)}>
+                Excel 导入
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+                新增题目
+              </Button>
             </div>
           </div>
-        </section>
 
-        <section
-          className={`${questionBankSectionPadding} rounded-[28px] border border-[var(--lms-color-border)] bg-white/96 shadow-[0_20px_48px_rgba(28,25,23,0.07)]`}
-        >
+          <div className="mt-4">
+            <Segmented
+              value={selectedType}
+              onChange={(value) => {
+                setCurrentPage(1)
+                setSelectedType(value as QuestionType | 'all')
+              }}
+              options={[
+                { label: '全部', value: 'all' },
+                { label: '单选题', value: 'single_choice' },
+                { label: '多选题', value: 'multi_choice' },
+                { label: '填空题', value: 'fill_text' },
+                { label: '简答题', value: 'rich_text' },
+              ]}
+            />
+          </div>
+        </div>
+
+        <section className="px-5 py-5 sm:px-6 sm:py-5 xl:px-7 xl:py-6 2xl:px-8">
           {isQuestionFetching ? (
             <div className="mb-4 flex justify-end text-stone-400">
               <Spin size="small" />

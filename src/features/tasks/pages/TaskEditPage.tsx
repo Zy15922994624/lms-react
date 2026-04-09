@@ -9,7 +9,7 @@ import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 
-function supportsQuestionDesign(taskType: TaskDetail['type']) {
+function supportsQuestionSelection(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
@@ -67,7 +67,7 @@ export default function TaskEditPage() {
           onCancel={() => navigate(`/tasks/${id}`)}
         />
 
-        {supportsQuestionDesign(task.type) ? <TaskQuestionManager task={task} /> : null}
+        {supportsQuestionSelection(task.type) ? <TaskQuestionManager task={task} /> : null}
       </WorkspaceLayout>
     </div>
   )

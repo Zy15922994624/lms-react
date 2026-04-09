@@ -23,18 +23,18 @@ type GradeFormAnswer = {
   comments?: string
 }
 
-const questionTypeTextMap = {
+const questionTypeLabelMap = {
   single_choice: '单选题',
   multi_choice: '多选题',
   fill_text: '填空题',
   rich_text: '简答题',
 } as const
 
-function supportsQuestionPreview(taskType: TaskDetail['type']) {
+function supportsQuestionGrading(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
-function formatAnswerDisplay(answer: unknown) {
+function formatAnswer(answer: unknown) {
   if (answer === null || answer === undefined || answer === '') {
     return '未作答'
   }
@@ -54,7 +54,7 @@ function getSubmissionAnswer(submission: TaskSubmission | null, questionId: stri
   return submission?.answers.find((item) => item.questionId === questionId)
 }
 
-function buildGradeFormAnswers(questions: TaskQuestion[], submission: TaskSubmission | null) {
+function buildFormAnswers(questions: TaskQuestion[], submission: TaskSubmission | null) {
   if (!submission) {
     return []
   }
@@ -68,7 +68,7 @@ function buildGradeFormAnswers(questions: TaskQuestion[], submission: TaskSubmis
   })
 }
 
-function calculateDraftScore(
+function calculatePreviewScore(
   questions: TaskQuestion[],
   draftAnswers: GradeFormAnswer[] | undefined,
   submission: TaskSubmission | null,
@@ -100,10 +100,10 @@ export default function TaskGradingModal({
 }: TaskGradingModalProps) {
   const [form] = Form.useForm()
   const watchedAnswers = Form.useWatch('answers', form) as GradeFormAnswer[] | undefined
-  const isQuestionTask = supportsQuestionPreview(task.type) && taskQuestions.length > 0
+  const isQuestionTask = supportsQuestionGrading(task.type) && taskQuestions.length > 0
 
   const previewScore = useMemo(
-    () => calculateDraftScore(taskQuestions, watchedAnswers, submission),
+    () => calculatePreviewScore(taskQuestions, watchedAnswers, submission),
     [submission, taskQuestions, watchedAnswers],
   )
 
@@ -113,14 +113,14 @@ export default function TaskGradingModal({
       title={submission ? `评分：${submission.user?.fullName || submission.user?.username || '学生'}` : '评分'}
       okText="保存评分"
       cancelText="取消"
-      width={880}
+      width={920}
       okButtonProps={{ loading }}
       afterOpenChange={(visible) => {
         if (visible && submission) {
           form.setFieldsValue({
             score: submission.score ?? 0,
             feedback: submission.feedback ?? '',
-            answers: buildGradeFormAnswers(taskQuestions, submission),
+            answers: buildFormAnswers(taskQuestions, submission),
           })
           return
         }
@@ -145,7 +145,7 @@ export default function TaskGradingModal({
                 manualScore: values.answers?.[index]?.manualScore,
                 comments: values.answers?.[index]?.comments?.trim() || undefined,
               }))
-              payload.score = calculateDraftScore(taskQuestions, values.answers, submission)
+              payload.score = calculatePreviewScore(taskQuestions, values.answers, submission)
             } else {
               payload.score = Number(values.score)
             }
@@ -184,7 +184,7 @@ export default function TaskGradingModal({
             {isQuestionTask ? (
               <>
                 <div className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-3 text-sm text-stone-600">
-                  当前按题合计得分：
+                  当前总分：
                   <span className="font-semibold text-stone-900"> {previewScore}</span> / {task.totalScore}
                 </div>
 
@@ -198,9 +198,9 @@ export default function TaskGradingModal({
                         className="rounded-[18px] border border-[var(--lms-color-border)] bg-stone-50/70 px-4 py-4"
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          <Tag color="blue">{questionTypeTextMap[question.type]}</Tag>
-                          <span className="text-xs text-stone-400">{question.score} 分</span>
-                          <span className="text-xs text-stone-400">自动分 {answer?.autoScore ?? 0}</span>
+                          <Tag color="blue">{questionTypeLabelMap[question.type]}</Tag>
+                          <span className="text-xs text-stone-400">分值：{question.score} 分</span>
+                          <span className="text-xs text-stone-400">自动得分：{answer?.autoScore ?? 0} 分</span>
                         </div>
 
                         <h3 className="mt-3 text-base font-semibold text-stone-900">{question.title}</h3>
@@ -213,17 +213,17 @@ export default function TaskGradingModal({
                         <div className="mt-4 rounded-[16px] bg-white px-4 py-4">
                           <div className="text-xs font-semibold text-stone-400">学生答案</div>
                           <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">
-                            {formatAnswerDisplay(answer?.answer)}
+                            {formatAnswer(answer?.answer)}
                           </div>
 
                           <div className="mt-4 text-xs font-semibold text-stone-400">参考答案</div>
                           <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
-                            {formatAnswerDisplay(question.answer)}
+                            {formatAnswer(question.answer)}
                           </div>
 
                           {question.analysis ? (
                             <>
-                              <div className="mt-4 text-xs font-semibold text-stone-400">解析</div>
+                              <div className="mt-4 text-xs font-semibold text-stone-400">题目解析</div>
                               <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
                                 {question.analysis}
                               </div>
@@ -240,7 +240,7 @@ export default function TaskGradingModal({
                             <InputNumber min={0} max={question.score} className="w-full" />
                           </Form.Item>
                           <Form.Item label="本题评语" name={['answers', index, 'comments']}>
-                            <Input.TextArea rows={3} placeholder="给学生的本题反馈" />
+                            <Input.TextArea rows={3} placeholder="填写本题评语" />
                           </Form.Item>
                         </div>
                       </article>
@@ -258,8 +258,8 @@ export default function TaskGradingModal({
               </Form.Item>
             )}
 
-            <Form.Item label="总评语" name="feedback">
-              <Input.TextArea rows={4} placeholder="给学生的整体反馈建议" />
+            <Form.Item label="整体评语" name="feedback">
+              <Input.TextArea rows={4} placeholder="填写整体评语" />
             </Form.Item>
           </Form>
         </div>

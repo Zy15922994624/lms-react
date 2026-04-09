@@ -1,6 +1,6 @@
+import { useMemo } from 'react'
 import { Button, Empty, Popconfirm, Space, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo } from 'react'
 import type { TaskQuestion, TaskQuestionType } from '@/features/tasks/types/task'
 
 interface TaskQuestionListProps {
@@ -14,7 +14,7 @@ interface TaskQuestionListProps {
   actionLoadingId?: string | null
 }
 
-const questionTypeTextMap: Record<TaskQuestionType, string> = {
+const questionTypeLabelMap: Record<TaskQuestionType, string> = {
   single_choice: '单选题',
   multi_choice: '多选题',
   fill_text: '填空题',
@@ -48,7 +48,7 @@ export default function TaskQuestionList({
   questions = [],
   loading = false,
   showAnswer = false,
-  emptyText = '当前还没有题目',
+  emptyText = '暂无题目',
   onMoveUp,
   onMoveDown,
   onDelete,
@@ -60,7 +60,7 @@ export default function TaskQuestionList({
         title: '题号',
         dataIndex: 'order',
         key: 'order',
-        width: 72,
+        width: 84,
         render: (_value, _record, index) => index + 1,
       },
       {
@@ -70,8 +70,8 @@ export default function TaskQuestionList({
         render: (value: string, record) => (
           <div className="min-w-0">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <Tag color={questionTypeColorMap[record.type]}>{questionTypeTextMap[record.type]}</Tag>
-              <span className="text-xs text-stone-400">{record.score} 分</span>
+              <Tag color={questionTypeColorMap[record.type]}>{questionTypeLabelMap[record.type]}</Tag>
+              <span className="text-xs text-stone-400">分值：{record.score} 分</span>
             </div>
             <div className="text-sm font-medium text-stone-900">{value}</div>
             {record.description ? (
@@ -87,7 +87,7 @@ export default function TaskQuestionList({
             {
               title: '操作',
               key: 'actions',
-              width: 180,
+              width: 190,
               render: (_value: unknown, record: TaskQuestion, index: number) => {
                 const isFirst = index === 0
                 const isLast = index === questions.length - 1
@@ -115,7 +115,7 @@ export default function TaskQuestionList({
                     ) : null}
                     {onDelete ? (
                       <Popconfirm
-                        title="确定删除这道题目吗？"
+                        title="确认删除这道题目吗？"
                         okText="删除"
                         cancelText="取消"
                         onConfirm={() => onDelete(record.id)}
@@ -141,9 +141,7 @@ export default function TaskQuestionList({
         <div className="space-y-4 py-2">
           {question.options.length ? (
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                选项
-              </div>
+              <div className="text-xs font-semibold tracking-[0.12em] text-stone-400">选项</div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {question.options.map((option) => (
                   <div
@@ -160,9 +158,7 @@ export default function TaskQuestionList({
 
           {showAnswer ? (
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                参考答案
-              </div>
+              <div className="text-xs font-semibold tracking-[0.12em] text-stone-400">参考答案</div>
               <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
                 {formatAnswer(question.answer)}
               </div>
@@ -171,9 +167,7 @@ export default function TaskQuestionList({
 
           {question.analysis ? (
             <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                解析
-              </div>
+              <div className="text-xs font-semibold tracking-[0.12em] text-stone-400">题目解析</div>
               <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-600">
                 {question.analysis}
               </div>

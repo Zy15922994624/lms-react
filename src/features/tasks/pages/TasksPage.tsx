@@ -14,7 +14,7 @@ import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
-const taskTypeTextMap: Record<TaskType, string> = {
+const taskTypeLabelMap: Record<TaskType, string> = {
   homework: '作业',
   quiz: '测验',
   project: '项目',
@@ -26,6 +26,18 @@ const taskTypeColorMap: Record<TaskType, string> = {
   quiz: 'orange',
   project: 'blue',
   reading: 'purple',
+}
+
+function getStudentTaskStatus(task: TaskItem) {
+  if (task.currentUserSubmissionStatus === 'graded') {
+    return task.currentUserScore !== undefined ? `已评分 ${task.currentUserScore} 分` : '已评分'
+  }
+
+  if (task.currentUserSubmissionStatus === 'submitted') {
+    return '已提交'
+  }
+
+  return '未提交'
 }
 
 export default function TasksPage() {
@@ -88,11 +100,9 @@ export default function TasksPage() {
       [...tasks]
         .sort(
           (left, right) =>
-            right.submittedCount -
-            right.gradedCount -
-            (left.submittedCount - left.gradedCount),
+            new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
         )
-        .slice(0, 4),
+        .slice(0, 5),
     [tasks],
   )
 
@@ -138,13 +148,13 @@ export default function TasksPage() {
         title: '学生',
         dataIndex: 'studentName',
         key: 'studentName',
-        width: 110,
+        width: 120,
       },
       {
         title: '提交时间',
         dataIndex: 'submittedAt',
         key: 'submittedAt',
-        width: 168,
+        width: 172,
         render: (value: string) => formatDateTime(value),
       },
     ],
@@ -171,7 +181,7 @@ export default function TasksPage() {
         title: '截止时间',
         dataIndex: 'dueDate',
         key: 'dueDate',
-        width: 168,
+        width: 172,
         render: (value: string) => (
           <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
         ),
@@ -183,22 +193,22 @@ export default function TasksPage() {
   const taskColumns = useMemo<ColumnsType<TaskItem>>(
     () => [
       {
-        title: '任务标题',
+        title: '任务',
         dataIndex: 'title',
         key: 'title',
-        width: 320,
+        width: 360,
         render: (value: string, record) => (
           <div className="min-w-0">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <Tag color={taskTypeColorMap[record.type]}>{taskTypeTextMap[record.type]}</Tag>
+              <Tag color={taskTypeColorMap[record.type]}>{taskTypeLabelMap[record.type]}</Tag>
+              {isTeacherView && !record.isPublished ? <Tag>未发布</Tag> : null}
               {!isTeacherView && record.currentUserSubmissionStatus === 'graded' ? (
                 <Tag color="green">已评分</Tag>
               ) : null}
-              {isTeacherView && !record.isPublished ? <Tag>未发布</Tag> : null}
             </div>
             <button
               type="button"
-              className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
+              className="line-clamp-1 text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
               onClick={() => navigate(`/tasks/${record.id}`)}
             >
               {value}
@@ -210,37 +220,26 @@ export default function TasksPage() {
         title: '所属课程',
         dataIndex: ['course', 'title'],
         key: 'course',
-        width: 160,
+        width: 180,
         render: (_value, record) => record.course?.title || '-',
       },
       {
         title: '截止时间',
         dataIndex: 'dueDate',
         key: 'dueDate',
-        width: 170,
+        width: 180,
         render: (value: string) => (
           <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
         ),
       },
       {
-        title: isTeacherView ? '提交' : '状态',
-        key: 'statusSimple',
-        width: 110,
-        render: (_value, record) => {
-          if (isTeacherView) {
-            return `${record.submittedCount}/${record.assignedStudentCount}`
-          }
-
-          if (record.currentUserSubmissionStatus === 'not_submitted') {
-            return '未提交'
-          }
-
-          if (record.currentUserSubmissionStatus === 'graded') {
-            return `已评分 ${record.currentUserScore ?? 0}`
-          }
-
-          return '已提交'
-        },
+        title: isTeacherView ? '提交情况' : '状态',
+        key: 'status',
+        width: 150,
+        render: (_value, record) =>
+          isTeacherView
+            ? `${record.submittedCount}/${record.assignedStudentCount}`
+            : getStudentTaskStatus(record),
       },
       ...(isTeacherView
         ? [
@@ -256,7 +255,7 @@ export default function TasksPage() {
                       icon={<MoreOutlined />}
                       type="text"
                       shape="circle"
-                      className="h-10 w-10 rounded-full border border-[rgba(28,25,23,0.06)] bg-white/88 text-stone-500"
+                      className="text-stone-500 transition hover:text-stone-900"
                     />
                   </Dropdown>
                 </div>
@@ -281,15 +280,16 @@ export default function TasksPage() {
     <div className="space-y-6 lg:space-y-8">
       <WorkspaceLayout
         preset="dashboard"
+        mainClassName="app-panel overflow-hidden"
         aside={
           isTeacherView ? (
-            <section className="app-panel px-5 py-5">
+            <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
               <div className="app-section-heading">
                 <h2 className="app-section-title">待批改</h2>
               </div>
               {pendingGradingItems.length === 0 ? (
                 <div className="mt-4">
-                  <Empty description="当前没有待批改的提交。" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  <Empty description="暂无待批改提交" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                 </div>
               ) : (
                 <Table<PendingGradingItem>
@@ -304,13 +304,13 @@ export default function TasksPage() {
               )}
             </section>
           ) : (
-            <section className="app-panel px-5 py-5">
+            <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
               <div className="app-section-heading">
-                <h2 className="app-section-title">优先关注</h2>
+                <h2 className="app-section-title">优先处理</h2>
               </div>
               {focusTasks.length === 0 ? (
                 <div className="mt-4">
-                  <Empty description="当前暂无可关注任务。" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                 </div>
               ) : (
                 <Table<TaskItem>
@@ -327,89 +327,82 @@ export default function TasksPage() {
           )
         }
       >
-        <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-          <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-[clamp(26px,2.7vw,36px)] font-semibold tracking-[-0.04em] text-stone-900">
-                {isTeacherView ? '任务管理' : '我的任务'}
-              </h1>
-            </div>
-
-            <div className="flex w-full flex-col gap-3 2xl:w-[720px]">
-              <Input.Search
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                onSearch={(value) => {
-                  setPage(1)
-                  setSearchKeyword(value.trim())
-                }}
-                placeholder="搜索任务标题或描述"
-              />
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                <Select
-                  allowClear
-                  placeholder="全部课程"
-                  value={selectedCourseId}
-                  options={(coursesPage?.items ?? []).map((course) => ({
-                    label: course.title,
-                    value: course.id,
-                  }))}
-                  onChange={(value) => {
-                    setPage(1)
-                    setSelectedCourseId(value)
-                  }}
-                />
-                <Select
-                  allowClear
-                  placeholder="全部类型"
-                  value={selectedType}
-                  options={Object.entries(taskTypeTextMap).map(([value, label]) => ({
-                    label,
-                    value,
-                  }))}
-                  onChange={(value) => {
-                    setPage(1)
-                    setSelectedType(value)
-                  }}
-                />
-                {isTeacherView ? (
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => navigate('/tasks/create')}
-                  >
-                    创建任务
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="app-panel overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-5 sm:px-6 xl:px-7">
-            <h2 className="text-xl font-semibold tracking-[-0.02em] text-stone-900">任务列表</h2>
-            {isFetching ? <span className="text-sm text-stone-400">刷新中…</span> : null}
+        <div className="flex flex-col gap-4 border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8 xl:flex-row xl:items-center xl:justify-between xl:px-9 xl:py-6 2xl:px-10">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-[-0.03em] text-stone-900">
+              {isTeacherView ? '任务' : '我的任务'}
+            </h1>
+            <div className="mt-1 text-sm text-stone-500">共 {total} 条</div>
           </div>
 
-          <div className="px-5 pb-5 sm:px-6 xl:px-7">
-            <Table<TaskItem>
-              size="middle"
-              rowKey="id"
-              dataSource={tasks}
-              columns={taskColumns}
-              loading={isFetching && Boolean(taskPage)}
-              locale={{ emptyText: '当前筛选下暂无任务' }}
-              scroll={{ x: 1180 }}
-              pagination={{
-                current: page,
-                pageSize,
-                total,
-                showSizeChanger: true,
+          <div className="flex flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+            <Input.Search
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onSearch={(value) => {
+                setPage(1)
+                setSearchKeyword(value.trim())
               }}
-              onChange={handleTaskTableChange}
+              placeholder="搜索任务标题"
+              className="xl:w-[280px] 2xl:w-[320px]"
             />
+            <Select
+              allowClear
+              placeholder="全部课程"
+              value={selectedCourseId}
+              className="xl:w-[200px]"
+              options={(coursesPage?.items ?? []).map((course) => ({
+                label: course.title,
+                value: course.id,
+              }))}
+              onChange={(value) => {
+                setPage(1)
+                setSelectedCourseId(value)
+              }}
+            />
+            <Select
+              allowClear
+              placeholder="全部类型"
+              value={selectedType}
+              className="xl:w-[160px]"
+              options={Object.entries(taskTypeLabelMap).map(([value, label]) => ({
+                label,
+                value,
+              }))}
+              onChange={(value) => {
+                setPage(1)
+                setSelectedType(value)
+              }}
+            />
+            {isTeacherView ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/create')}>
+                创建任务
+              </Button>
+            ) : null}
           </div>
+        </div>
+
+        <section className="px-5 py-5 sm:px-6 xl:px-7 2xl:px-8">
+          {isFetching ? (
+            <div className="mb-4 text-right text-sm text-stone-400">正在刷新…</div>
+          ) : null}
+
+          <Table<TaskItem>
+            size="middle"
+            rowKey="id"
+            dataSource={tasks}
+            columns={taskColumns}
+            loading={isFetching && Boolean(taskPage)}
+            locale={{ emptyText: '暂无任务' }}
+            scroll={{ x: 980 }}
+            pagination={{
+              current: page,
+              pageSize,
+              total,
+              showSizeChanger: true,
+            }}
+            onChange={handleTaskTableChange}
+          />
         </section>
       </WorkspaceLayout>
 
@@ -426,7 +419,7 @@ export default function TasksPage() {
         }}
       >
         <p className="text-sm leading-7 text-stone-500">
-          删除后任务、定向分配和学生提交都会一起移除，请确认是否继续。
+          删除后，任务、定向分配和学生提交会一起移除，请确认是否继续。
         </p>
       </Modal>
     </div>

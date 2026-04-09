@@ -1,6 +1,7 @@
 ﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Dropdown, Empty, Modal, Segmented } from 'antd'
+import { useEffect, useRef } from 'react'
+import { Button, Dropdown, Empty, Input, Modal, Segmented } from 'antd'
 import type { MenuProps } from 'antd'
 import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -15,23 +16,50 @@ import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 type FilterValue = 'all' | 'active' | 'archived'
 const EMPTY_COURSES: CourseSummary[] = []
 
+function formatUpdatedAt(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
 export default function CoursesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageCourses = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
+  const isStudentView = currentUser?.role === 'student'
 
   const [filter, setFilter] = useState<FilterValue>('all')
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [joinKeyword, setJoinKeyword] = useState('')
+  const [visibleCount, setVisibleCount] = useState(10)
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create')
   const [formOpen, setFormOpen] = useState(false)
   const [currentCourse, setCurrentCourse] = useState<CourseDetail | CourseSummary | null>(null)
   const [pendingDeleteCourse, setPendingDeleteCourse] = useState<CourseSummary | null>(null)
+  const listScrollRef = useRef<HTMLDivElement | null>(null)
+  const listSentinelRef = useRef<HTMLDivElement | null>(null)
 
   const { data: coursesPage, isLoading } = useQuery({
     queryKey: ['courses'],
     queryFn: () => courseService.getCourses(true, 1, 100),
   })
   const courses = useMemo(() => coursesPage?.items ?? EMPTY_COURSES, [coursesPage])
+
+  const { data: availableCourses = [], isLoading: isAvailableCoursesLoading } = useQuery({
+    queryKey: ['available-courses', joinKeyword],
+    queryFn: () => courseService.getAvailableCourses(joinKeyword.trim() || undefined),
+    enabled: isStudentView,
+  })
 
   const createCourseMutation = useMutation({
     mutationFn: (values: CourseFormValues) => courseService.createCourse(values),
@@ -84,32 +112,85 @@ export default function CoursesPage() {
     },
   })
 
+  const joinCourseMutation = useMutation({
+    mutationFn: (courseId: string) => courseService.joinCourse(courseId),
+    onSuccess: async () => {
+      uiMessage.success('已加入课程')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['courses'] }),
+        queryClient.invalidateQueries({ queryKey: ['available-courses'] }),
+      ])
+    },
+    onError: () => {
+      uiMessage.error('加入课程失败')
+    },
+  })
+
   const visibleCourses = useMemo(() => {
-    if (filter === 'all') return courses
-    if (filter === 'active') return courses.filter((course) => !course.isArchived)
-    return courses.filter((course) => course.isArchived)
-  }, [courses, filter])
+    const normalizedKeyword = searchKeyword.trim().toLowerCase()
+    const filteredByStatus =
+      filter === 'all'
+        ? courses
+        : courses.filter((course) => (filter === 'active' ? !course.isArchived : course.isArchived))
 
-  const metrics = useMemo(() => {
-    const activeCount = courses.filter((course) => !course.isArchived).length
-    const archivedCount = courses.filter((course) => course.isArchived).length
-    const taskCount = courses.reduce((total, course) => total + course.taskCount, 0)
+    if (!normalizedKeyword) {
+      return filteredByStatus
+    }
 
-    return [
-      { label: '课程总数', value: courses.length },
-      { label: '进行中课程', value: activeCount },
-      { label: '已归档课程', value: archivedCount },
-      { label: '课程任务总数', value: taskCount },
-    ]
-  }, [courses])
+    return filteredByStatus.filter((course) =>
+      [course.title, course.teacherName, course.courseCode ?? '']
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedKeyword),
+    )
+  }, [courses, filter, searchKeyword])
 
-  const focusCourses = useMemo(
+  const recentCourses = useMemo(
     () =>
       [...courses]
-        .sort((left, right) => right.taskCount - left.taskCount || right.studentCount - left.studentCount)
+        .sort(
+          (left, right) =>
+            new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+        )
         .slice(0, 3),
     [courses],
   )
+
+  const displayedCourses = useMemo(
+    () => visibleCourses.slice(0, visibleCount),
+    [visibleCourses, visibleCount],
+  )
+
+  const hasMoreCourses = displayedCourses.length < visibleCourses.length
+
+  useEffect(() => {
+    const root = listScrollRef.current
+    const target = listSentinelRef.current
+
+    if (!root || !target || !hasMoreCourses) {
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (!entry?.isIntersecting) {
+          return
+        }
+
+        setVisibleCount((current) => Math.min(current + 10, visibleCourses.length))
+      },
+      {
+        root,
+        rootMargin: '0px 0px 120px 0px',
+        threshold: 0.1,
+      },
+    )
+
+    observer.observe(target)
+
+    return () => observer.disconnect()
+  }, [hasMoreCourses, visibleCourses.length])
 
   const openCreateModal = () => {
     setFormMode('create')
@@ -160,24 +241,69 @@ export default function CoursesPage() {
     },
   ]
 
-  const focusAside = (
+  const focusAside = canManageCourses ? (
     <div className={`app-panel ${workspacePanelPadding.asideWarm}`}>
       <div className="app-section-heading">
-        <h2 className="app-section-title">优先查看</h2>
+        <h2 className="app-section-title">最近更新</h2>
       </div>
-      <div className="space-y-3">
-        {focusCourses.map((course) => (
+      <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
+        {recentCourses.map((course) => (
           <button
             type="button"
             key={course.id}
             onClick={() => navigate(`/courses/${course.id}`)}
-            className="w-full rounded-[22px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-4 text-left transition hover:border-[rgba(255,107,53,0.18)]"
+            className="w-full rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-3 text-left transition hover:border-[rgba(255,107,53,0.18)]"
           >
             <div className="text-sm font-medium leading-6 text-stone-900">{course.title}</div>
             <div className="mt-1 text-xs leading-5 text-stone-500">
-              {course.teacherName} · {course.studentCount} 名成员 · {course.taskCount} 个任务
+              {course.teacherName} · 更新于 {formatUpdatedAt(course.updatedAt)}
             </div>
           </button>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className={`app-panel ${workspacePanelPadding.asideWarm}`}>
+      <div className="app-section-heading">
+        <h2 className="app-section-title">可加入课程</h2>
+      </div>
+      <Input.Search
+        placeholder="搜索课程名或课程代码"
+        allowClear
+        value={joinKeyword}
+        onChange={(event) => setJoinKeyword(event.target.value)}
+        className="mb-4"
+      />
+      <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
+        {!isAvailableCoursesLoading && availableCourses.length === 0 ? (
+          <Empty description="暂无可加入课程" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : null}
+
+        {availableCourses.map((course) => (
+          <div
+            key={course.id}
+            className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-3"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium leading-6 text-stone-900">
+                  {course.title}
+                </div>
+                <div className="mt-1 text-xs leading-5 text-stone-500">
+                  {course.teacherName}
+                  {course.courseCode ? ` · ${course.courseCode}` : ''}
+                </div>
+              </div>
+              <Button
+                type="primary"
+                size="small"
+                loading={joinCourseMutation.isPending && joinCourseMutation.variables === course.id}
+                onClick={() => joinCourseMutation.mutate(course.id)}
+              >
+                加入
+              </Button>
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -188,23 +314,33 @@ export default function CoursesPage() {
       <WorkspaceLayout
         preset="dashboard"
         aside={focusAside}
-        mainClassName={`app-panel ${workspacePanelPadding.section}`}
+        mainClassName="app-panel overflow-hidden"
       >
-        <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-              课程空间
+        <div className="flex flex-col gap-4 border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8 xl:flex-row xl:items-center xl:justify-between xl:px-9 xl:py-6 2xl:px-10">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-[-0.03em] text-stone-900">课程</h1>
+            <div className="mt-1 text-sm text-stone-500">
+              {isStudentView ? `已加入 ${courses.length} 门课程` : `共 ${courses.length} 门课程`}
             </div>
-            <h1 className="mt-3 max-w-4xl text-[clamp(28px,3vw,44px)] font-semibold tracking-[-0.04em] text-stone-900">
-              查看课程、成员与任务概况
-            </h1>
           </div>
 
-          <div className="flex w-full flex-col gap-3 rounded-[24px] border border-[rgba(255,107,53,0.1)] bg-[linear-gradient(180deg,#fff5ed_0%,#ffffff_100%)] p-4 2xl:w-[340px] 2xl:min-w-[320px] 2xl:max-w-[360px]">
+          <div className="flex flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+            <Input
+              allowClear
+              value={searchKeyword}
+              onChange={(event) => {
+                setSearchKeyword(event.target.value)
+                setVisibleCount(10)
+              }}
+              placeholder="搜索课程名、教师或课程代码"
+              className="xl:w-[280px] 2xl:w-[320px]"
+            />
             <Segmented
-              block
               value={filter}
-              onChange={(value) => setFilter(value as FilterValue)}
+              onChange={(value) => {
+                setFilter(value as FilterValue)
+                setVisibleCount(10)
+              }}
               options={[
                 { label: '全部', value: 'all' },
                 { label: '进行中', value: 'active' },
@@ -212,131 +348,124 @@ export default function CoursesPage() {
               ]}
             />
             {canManageCourses ? (
-              <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreateModal}>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
                 创建课程
               </Button>
             ) : null}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:gap-5">
-          {isLoading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-[118px] rounded-[24px] border border-[var(--lms-color-border)] bg-white/70"
-                />
-              ))
-            : metrics.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-[24px] border border-[var(--lms-color-border)] bg-white/92 px-5 py-5 shadow-[0_12px_30px_rgba(28,25,23,0.05)]"
-                >
-                  <div className="text-sm text-stone-500">{item.label}</div>
-                  <div className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-        </div>
-      </WorkspaceLayout>
+        <section className="overflow-hidden">
+          <div className="hidden grid-cols-[minmax(0,1.8fr)_140px_120px_120px_120px_120px_64px] gap-4 border-b border-[var(--lms-color-border)] px-6 py-3 text-xs font-medium tracking-[0.08em] text-stone-400 md:grid xl:px-9 2xl:px-10">
+            <div>课程</div>
+            <div>教师</div>
+            <div>成员</div>
+            <div>任务</div>
+            <div>状态</div>
+            <div>更新</div>
+            <div />
+          </div>
 
-      <section className="app-panel overflow-hidden">
-        <div className={workspacePanelPadding.blockHeader}>
-          <h2 className="text-xl font-semibold tracking-[-0.02em] text-stone-900">课程列表</h2>
-        </div>
+          <div
+            ref={listScrollRef}
+            className="max-h-[560px] overflow-y-auto overscroll-contain md:max-h-[620px]"
+          >
+            <div className="divide-y divide-[var(--lms-color-border)]">
+            {!isLoading && visibleCourses.length === 0 ? (
+              <div className="px-6 py-10 sm:px-8 xl:px-9 2xl:px-10">
+                <Empty description="暂无课程" />
+              </div>
+            ) : null}
 
-        <div className="divide-y divide-[var(--lms-color-border)]">
-          {!isLoading && visibleCourses.length === 0 ? (
-            <div className="px-6 py-10 sm:px-8">
-              <Empty description="当前筛选下暂无课程" />
-            </div>
-          ) : null}
-
-          {visibleCourses.map((course) => (
-            <div
-              key={course.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate(`/courses/${course.id}`)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  navigate(`/courses/${course.id}`)
-                }
-              }}
-              className="group grid cursor-pointer gap-6 px-6 py-6 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)] 2xl:grid-cols-[minmax(0,1.78fr)_minmax(420px,1.08fr)] 2xl:px-10 2xl:py-7"
-            >
-              <div className="min-w-0">
-                <div className="flex items-start justify-between gap-4">
+            {displayedCourses.map((course) => (
+              <div
+                key={course.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/courses/${course.id}`)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    navigate(`/courses/${course.id}`)
+                  }
+                }}
+                className="group cursor-pointer px-6 py-5 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-8 xl:px-9 2xl:px-10"
+              >
+                <div className="flex items-start justify-between gap-3 md:hidden">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {course.courseCode ? (
-                        <span className="rounded-full bg-[var(--lms-color-primary-soft)] px-3 py-1 text-[11px] font-semibold text-orange-600">
-                          {course.courseCode}
-                        </span>
-                      ) : null}
-                      {course.semester ? (
-                        <span className="rounded-full border border-[var(--lms-color-border)] px-3 py-1 text-[11px] font-medium text-stone-500">
-                          {course.semester}
-                        </span>
-                      ) : null}
-                      <span
-                        className={[
-                          'rounded-full px-3 py-1 text-[11px] font-medium',
-                          course.isArchived ? 'bg-stone-100 text-stone-500' : 'bg-emerald-50 text-emerald-600',
-                        ].join(' ')}
-                      >
-                        {course.isArchived ? '已归档' : '进行中'}
-                      </span>
+                    <div className="truncate text-base font-semibold text-stone-900">{course.title}</div>
+                    <div className="mt-1 text-sm text-stone-500">
+                      {course.teacherName}
+                      {course.courseCode ? ` · ${course.courseCode}` : ''}
                     </div>
-
-                    <div className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-stone-900 transition group-hover:text-orange-600">
-                      <span className="truncate">{course.title}</span>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-500">
+                      <span>{course.studentCount} 人</span>
+                      <span>{course.taskCount} 个任务</span>
+                      <span>{course.isArchived ? '已归档' : '进行中'}</span>
+                      <span>{formatUpdatedAt(course.updatedAt)}</span>
                     </div>
                   </div>
-
                   {canManageCourses ? (
                     <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                       <Dropdown menu={{ items: actionItems(course) }} trigger={['click']}>
-                        <Button
-                          icon={<MoreOutlined />}
-                          type="text"
-                          shape="circle"
-                          className="h-10 w-10 rounded-full border border-[rgba(28,25,23,0.06)] bg-white/88 text-stone-500 shadow-none transition hover:border-[rgba(255,107,53,0.18)] hover:bg-white hover:text-stone-900 sm:opacity-0 sm:group-hover:opacity-100"
-                        />
+                        <Button icon={<MoreOutlined />} type="text" shape="circle" />
                       </Dropdown>
                     </div>
                   ) : null}
                 </div>
 
-                <div className="mt-2 max-w-3xl line-clamp-2 text-sm leading-6 text-stone-500 2xl:max-w-4xl">
-                  {course.description || '暂无课程说明'}
+                <div className="hidden items-center gap-4 md:grid md:grid-cols-[minmax(0,1.8fr)_140px_120px_120px_120px_120px_64px]">
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold text-stone-900 transition group-hover:text-orange-600">
+                      {course.title}
+                    </div>
+                    <div className="mt-1 truncate text-sm text-stone-500">
+                      {course.courseCode ?? course.semester ?? '—'}
+                    </div>
+                  </div>
+                  <div className="truncate text-sm text-stone-600">{course.teacherName}</div>
+                  <div className="text-sm text-stone-600">{course.studentCount} 人</div>
+                  <div className="text-sm text-stone-600">{course.taskCount} 个</div>
+                  <div>
+                    <span
+                      className={[
+                        'rounded-full px-2.5 py-1 text-xs font-medium',
+                        course.isArchived ? 'bg-stone-100 text-stone-500' : 'bg-emerald-50 text-emerald-600',
+                      ].join(' ')}
+                    >
+                      {course.isArchived ? '已归档' : '进行中'}
+                    </span>
+                  </div>
+                  <div className="text-sm text-stone-500">{formatUpdatedAt(course.updatedAt)}</div>
+                  <div className="flex justify-end">
+                    {canManageCourses ? (
+                      <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                        <Dropdown menu={{ items: actionItems(course) }} trigger={['click']}>
+                          <Button
+                            icon={<MoreOutlined />}
+                            type="text"
+                            shape="circle"
+                            className="text-stone-500 transition hover:text-stone-900"
+                          />
+                        </Dropdown>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
+            ))}
 
-              <div className="grid grid-cols-2 gap-3 text-sm text-stone-500 sm:grid-cols-4 lg:grid-cols-2 2xl:grid-cols-4 2xl:gap-4">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.16em] text-stone-400">教师</div>
-                  <div className="mt-2 font-medium text-stone-900">{course.teacherName}</div>
+              {!isLoading && displayedCourses.length > 0 ? (
+                <div className="flex items-center justify-center px-6 py-4 text-sm text-stone-400 sm:px-8 xl:px-9 2xl:px-10">
+                  {hasMoreCourses ? '继续向下滚动加载更多课程' : `已显示全部 ${visibleCourses.length} 门课程`}
                 </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.16em] text-stone-400">成员</div>
-                  <div className="mt-2 font-medium text-stone-900">{course.studentCount} 人</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.16em] text-stone-400">任务</div>
-                  <div className="mt-2 font-medium text-stone-900">{course.taskCount} 个</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-[0.16em] text-stone-400">学分</div>
-                  <div className="mt-2 font-medium text-stone-900">{course.credits ?? '-'}</div>
-                </div>
-              </div>
+              ) : null}
+
+              {hasMoreCourses ? <div ref={listSentinelRef} className="h-1 w-full" /> : null}
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
+      </WorkspaceLayout>
 
       <CourseFormModal
         open={formOpen}

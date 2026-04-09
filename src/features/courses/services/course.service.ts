@@ -1,5 +1,11 @@
 import client from '@/shared/api/client'
-import type { CourseDetail, CourseFormValues, CourseMembersPage, CoursesPage } from '@/features/courses/types/course'
+import type {
+  CourseDetail,
+  CourseFormValues,
+  CourseMembersPage,
+  CourseSummary,
+  CoursesPage,
+} from '@/features/courses/types/course'
 
 const COURSE_MEMBERS_FETCH_PAGE_SIZE = 100
 
@@ -12,6 +18,12 @@ export const courseService = {
 
   async getCourseById(courseId: string) {
     return (await client.get<CourseDetail>(`/courses/${courseId}`)) as unknown as CourseDetail
+  },
+
+  async getAvailableCourses(keyword?: string) {
+    return (await client.get<CourseSummary[]>('/courses/available', {
+      params: keyword ? { keyword } : undefined,
+    })) as unknown as CourseSummary[]
   },
 
   async getCourseMembers(courseId: string, page = 1, pageSize = 20) {
@@ -62,5 +74,9 @@ export const courseService = {
 
   async deleteCourse(courseId: string) {
     return (await client.delete(`/courses/${courseId}`)) as unknown as null
+  },
+
+  async joinCourse(courseId: string) {
+    return (await client.post(`/courses/${courseId}/join`)) as unknown as null
   },
 }

@@ -142,16 +142,16 @@ export default function QuestionBankFormModal({
     <Modal
       open={open}
       title={question ? '编辑题目' : '新增题目'}
-      width={880}
+      width={820}
       okText={question ? '保存修改' : '创建题目'}
       cancelText="取消"
       confirmLoading={submitting}
       destroyOnHidden
       styles={{
         body: {
-          maxHeight: 'calc(100vh - 180px)',
+          maxHeight: 'calc(100vh - 160px)',
           overflowY: 'auto',
-          paddingTop: 16,
+          paddingTop: 12,
         },
       }}
       onCancel={onCancel}

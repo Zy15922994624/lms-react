@@ -18,6 +18,13 @@ function supportsQuestionPreview(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
+const taskTypeLabelMap: Record<TaskDetail['type'], string> = {
+  homework: '作业',
+  quiz: '测验',
+  project: '项目',
+  reading: '阅读',
+}
+
 function getTaskTypeColor(taskType: TaskDetail['type']) {
   if (taskType === 'reading') return 'purple'
   if (taskType === 'project') return 'blue'
@@ -90,15 +97,6 @@ export default function TaskDetailPage() {
     },
   })
 
-  const taskTypeLabel =
-    task?.type === 'homework'
-      ? '作业'
-      : task?.type === 'quiz'
-        ? '测验'
-        : task?.type === 'project'
-          ? '项目'
-        : '阅读'
-
   const teacherSubmissionColumns = useMemo<ColumnsType<TaskSubmission>>(
     () => [
       {
@@ -127,7 +125,8 @@ export default function TaskDetailPage() {
         title: '得分',
         dataIndex: 'score',
         key: 'score',
-        render: (_value, record) => (record.score !== undefined ? `${record.score}/${record.maxScore}` : '-'),
+        render: (_value, record) =>
+          record.score !== undefined ? `${record.score}/${record.maxScore}` : '-',
       },
       {
         title: '操作',
@@ -153,107 +152,169 @@ export default function TaskDetailPage() {
     return <Navigate to="/tasks" replace />
   }
 
+  const submissionCountText = `${task.submittedCount}/${task.assignedStudentCount}`
+
   return (
     <div className="space-y-6 lg:space-y-8">
-      <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <button
-              type="button"
-              onClick={() => navigate('/tasks')}
-              className="text-sm font-medium text-stone-400 transition hover:text-stone-700"
-            >
-              返回任务中心
-            </button>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Tag color={getTaskTypeColor(task.type)}>{taskTypeLabel}</Tag>
-              <h1 className="text-[clamp(24px,2.6vw,34px)] font-semibold tracking-[-0.04em] text-stone-950">
+      <section className="app-panel overflow-hidden">
+        <div className="border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8 xl:px-9 xl:py-6 2xl:px-10">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => navigate('/tasks')}
+                className="text-sm font-medium text-stone-400 transition hover:text-stone-700"
+              >
+                返回任务列表
+              </button>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Tag color={getTaskTypeColor(task.type)}>{taskTypeLabelMap[task.type]}</Tag>
+                {isTeacherView && !task.isPublished ? <Tag>未发布</Tag> : null}
+              </div>
+
+              <h1 className="mt-3 text-[clamp(28px,3vw,40px)] font-semibold tracking-[-0.04em] text-stone-950">
                 {task.title}
               </h1>
+
+              <dl className="mt-5 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                <div>
+                  <dt className="text-stone-400">所属课程</dt>
+                  <dd className="mt-1 font-medium text-stone-900">{task.course?.title || '-'}</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-400">截止时间</dt>
+                  <dd className={`mt-1 font-medium ${getDueDateClass(task.dueDate)}`}>
+                    {formatDateTime(task.dueDate)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-400">总分</dt>
+                  <dd className="mt-1 font-medium text-stone-900">{task.totalScore} 分</dd>
+                </div>
+                <div>
+                  <dt className="text-stone-400">分配范围</dt>
+                  <dd className="mt-1 font-medium text-stone-900">
+                    {task.assignmentMode === 'selected' ? '定向任务' : '全班任务'}
+                  </dd>
+                </div>
+              </dl>
+
+              {task.description ? (
+                <div className="mt-4 rounded-[16px] bg-stone-50 px-4 py-3 text-sm leading-7 text-stone-600">
+                  {task.description}
+                </div>
+              ) : null}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-stone-500">
-              <span>{task.course?.title || '-'}</span>
-              <span className={getDueDateClass(task.dueDate)}>{formatDateTime(task.dueDate)}</span>
-              <span>{task.totalScore} 分</span>
-              <span>{task.assignmentMode === 'selected' ? '定向任务' : '全班任务'}</span>
-              <span>提交 {task.submittedCount}/{task.assignedStudentCount}</span>
-              {isTeacherView ? <span>已评分 {task.gradedCount}</span> : null}
-            </div>
-            {task.description ? (
-              <p className="mt-3 max-w-4xl whitespace-pre-wrap text-sm leading-7 text-stone-600">
-                {task.description}
-              </p>
+
+            {isTeacherView ? (
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => navigate(`/tasks/${id}/edit`)}>编辑任务</Button>
+                <Popconfirm
+                  title="确认删除这条任务吗？"
+                  okText="删除"
+                  cancelText="取消"
+                  onConfirm={() => deleteMutation.mutate()}
+                >
+                  <Button danger loading={deleteMutation.isPending}>
+                    删除任务
+                  </Button>
+                </Popconfirm>
+              </div>
             ) : null}
           </div>
-
-          {isTeacherView ? (
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => navigate(`/tasks/${id}/edit`)}>编辑任务</Button>
-              <Popconfirm
-                title="确定删除这条任务吗？"
-                okText="删除"
-                cancelText="取消"
-                onConfirm={() => deleteMutation.mutate()}
-              >
-                <Button danger loading={deleteMutation.isPending}>
-                  删除任务
-                </Button>
-              </Popconfirm>
-            </div>
-          ) : null}
         </div>
 
-        {task.attachments.length || task.relatedResources.length ? (
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[rgba(28,25,23,0.06)] pt-4">
-            {task.attachments.length ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-stone-400">附件</span>
-                {task.attachments.map((attachment) => (
-                  <a
-                    key={attachment.key}
-                    href={attachment.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full border border-[rgba(28,25,23,0.08)] px-3 py-1.5 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.2)] hover:text-orange-600"
-                  >
-                    {attachment.name || attachment.originalName}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-
-            {task.relatedResources.length ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-stone-400">资源</span>
-                {task.relatedResources.map((resource) => (
-                  <a
-                    key={resource.id}
-                    href={resource.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full border border-[rgba(28,25,23,0.08)] px-3 py-1.5 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.2)] hover:text-orange-600"
-                  >
-                    {resource.title}
-                  </a>
-                ))}
-              </div>
-            ) : null}
+        <div className="grid gap-4 px-6 py-5 sm:px-8 xl:grid-cols-4 xl:px-9 2xl:px-10">
+          <div className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/92 px-4 py-4">
+            <div className="text-sm text-stone-500">提交情况</div>
+            <div className="mt-2 text-2xl font-semibold text-stone-900">{submissionCountText}</div>
           </div>
-        ) : null}
+          <div className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/92 px-4 py-4">
+            <div className="text-sm text-stone-500">已评分</div>
+            <div className="mt-2 text-2xl font-semibold text-stone-900">{task.gradedCount}</div>
+          </div>
+          <div className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/92 px-4 py-4">
+            <div className="text-sm text-stone-500">及格分</div>
+            <div className="mt-2 text-2xl font-semibold text-stone-900">{task.passingScore}</div>
+          </div>
+          <div className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/92 px-4 py-4">
+            <div className="text-sm text-stone-500">发布时间</div>
+            <div className="mt-2 text-sm font-medium text-stone-900">
+              {task.publishedAt ? formatDateTime(task.publishedAt) : '未发布'}
+            </div>
+          </div>
+        </div>
       </section>
 
-      <WorkspaceLayout preset="course" mainClassName="w-full space-y-5">
-        {isTeacherView && shouldLoadQuestions ? (
+      <WorkspaceLayout
+        preset="course"
+        mainClassName="w-full space-y-5"
+        aside={
+          <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
+            <div className="app-section-heading">
+              <h2 className="app-section-title">附件与资源</h2>
+            </div>
+
+            {!task.attachments.length && !task.relatedResources.length ? (
+              <div className="mt-4">
+                <Empty description="暂无附件或资源" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {task.attachments.length ? (
+                  <div>
+                    <div className="mb-2 text-sm font-medium text-stone-900">任务附件</div>
+                    <div className="space-y-2">
+                      {task.attachments.map((attachment) => (
+                        <a
+                          key={attachment.key}
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                        >
+                          {attachment.name || attachment.originalName}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {task.relatedResources.length ? (
+                  <div>
+                    <div className="mb-2 text-sm font-medium text-stone-900">关联资源</div>
+                    <div className="space-y-2">
+                      {task.relatedResources.map((resource) => (
+                        <a
+                          key={resource.id}
+                          href={resource.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                        >
+                          {resource.title}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </section>
+        }
+      >
+        {shouldLoadQuestions ? (
           <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-stone-950">题目清单</h2>
+              <h2 className="text-lg font-semibold text-stone-950">题目列表</h2>
               <span className="text-sm text-stone-400">{taskQuestions.length} 题</span>
             </div>
             <TaskQuestionList
               questions={taskQuestions}
               loading={isQuestionsLoading}
-              showAnswer
-              emptyText="当前还没有配置题目。"
+              showAnswer={isTeacherView}
+              emptyText="当前还没有配置题目"
             />
           </section>
         ) : null}
@@ -262,9 +323,7 @@ export default function TaskDetailPage() {
           <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-stone-950">提交记录</h2>
-              <span className="text-sm text-stone-400">
-                {submissionsPage?.total ?? 0} 条
-              </span>
+              <span className="text-sm text-stone-400">{submissionsPage?.total ?? 0} 条</span>
             </div>
 
             {submissionsPage && submissionsPage.items.length > 0 ? (
@@ -290,7 +349,7 @@ export default function TaskDetailPage() {
                 </div>
               </>
             ) : (
-              <Empty description="当前还没有学生提交。" />
+              <Empty description="当前还没有学生提交" />
             )}
           </section>
         ) : (

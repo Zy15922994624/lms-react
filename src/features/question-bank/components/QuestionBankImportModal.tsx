@@ -147,8 +147,8 @@ export default function QuestionBankImportModal({
   return (
     <Modal
       open={open}
-      title="Excel 导入题目"
-      width={720}
+      title="导入题目"
+      width={680}
       okText="开始导入"
       cancelText="取消"
       confirmLoading={importing || submitting}
@@ -198,21 +198,14 @@ export default function QuestionBankImportModal({
           </Dragger>
         </div>
 
-        <div className="space-y-3 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
-          <div className="text-sm font-medium text-stone-700">模板字段</div>
-          <div className="flex flex-wrap gap-2">
-            {templateFieldLabels.map((label) => (
-              <Tag key={label} className="m-0 rounded-full px-3 py-1 text-sm text-stone-600">
-                {label}
-              </Tag>
-            ))}
+        <div className="space-y-2 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3">
+          <div className="text-sm font-medium text-stone-700">模板说明</div>
+          <div className="text-sm leading-6 text-stone-500">
+            字段：
+            {templateFieldLabels.join('、')}
           </div>
-          <div className="flex flex-wrap gap-2 text-xs text-stone-500">
-            {typeRules.map((rule) => (
-              <span key={rule} className="rounded-full bg-white px-3 py-1">
-                {rule}
-              </span>
-            ))}
+          <div className="text-xs leading-6 text-stone-500">
+            题型值：{typeRules.join('；')}
           </div>
         </div>
 
@@ -224,19 +217,14 @@ export default function QuestionBankImportModal({
               showIcon
             />
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-stone-200 bg-white px-4 py-3">
-                <div className="text-xs text-stone-500">总条数</div>
-                <div className="mt-1 text-2xl font-semibold text-stone-950">{result.total}</div>
-              </div>
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <div className="text-xs text-emerald-700">成功</div>
-                <div className="mt-1 text-2xl font-semibold text-emerald-800">{result.successCount}</div>
-              </div>
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <div className="text-xs text-amber-700">失败</div>
-                <div className="mt-1 text-2xl font-semibold text-amber-800">{result.errorCount}</div>
-              </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
+              <Tag className="m-0 rounded-full px-3 py-1">总条数 {result.total}</Tag>
+              <Tag color="success" className="m-0 rounded-full px-3 py-1">
+                成功 {result.successCount}
+              </Tag>
+              <Tag color="warning" className="m-0 rounded-full px-3 py-1">
+                失败 {result.errorCount}
+              </Tag>
             </div>
 
             {result.errors.length ? (

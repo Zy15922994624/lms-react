@@ -26,14 +26,14 @@ interface TaskSubmissionPanelProps {
   onSubmit: (values: TaskSubmissionValues) => Promise<void>
 }
 
-const questionTypeTextMap: Record<TaskQuestionType, string> = {
+const questionTypeLabelMap: Record<TaskQuestionType, string> = {
   single_choice: '单选题',
   multi_choice: '多选题',
   fill_text: '填空题',
   rich_text: '简答题',
 }
 
-function supportsQuestionPreview(taskType: TaskDetail['type']) {
+function supportsQuestionAnswering(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
@@ -78,7 +78,7 @@ function getSubmissionAnswer(submission: TaskSubmission | null | undefined, ques
   return submission?.answers.find((item) => item.questionId === questionId)
 }
 
-function getEffectiveScore(answer?: TaskSubmissionAnswer) {
+function getQuestionScore(answer?: TaskSubmissionAnswer) {
   return answer?.manualScore ?? answer?.autoScore ?? 0
 }
 
@@ -119,6 +119,10 @@ function buildInitialAnswerValues(
   )
 }
 
+function getQuestionScoreText(score: number, totalScore: number) {
+  return ` ${score} / ${totalScore}`
+}
+
 export default function TaskSubmissionPanel({
   task,
   submission,
@@ -126,14 +130,16 @@ export default function TaskSubmissionPanel({
   onSubmit,
 }: TaskSubmissionPanelProps) {
   const [content, setContent] = useState(submission?.content ?? '')
-  const [fileList, setFileList] = useState<AttachmentUploadFile[]>(toUploadFileList(submission?.attachments ?? []))
+  const [fileList, setFileList] = useState<AttachmentUploadFile[]>(
+    toUploadFileList(submission?.attachments ?? []),
+  )
   const [answerValues, setAnswerValues] = useState<AnswerValueMap>(() =>
     buildInitialAnswerValues(submission, taskQuestions),
   )
   const [uploading, setUploading] = useState(false)
 
   const canEditSubmission = submission?.status !== 'graded'
-  const showQuestionSheet = supportsQuestionPreview(task.type) && taskQuestions.length > 0
+  const showQuestionSheet = supportsQuestionAnswering(task.type) && taskQuestions.length > 0
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -172,9 +178,9 @@ export default function TaskSubmissionPanel({
           <Tag color={submission.status === 'graded' ? 'green' : 'orange'}>
             {submission.status === 'graded' ? '已评分' : '已提交'}
           </Tag>
-          <span>最后提交：{formatDateTime(submission.submittedAt)}</span>
+          <span>最近提交：{formatDateTime(submission.submittedAt)}</span>
           <span className="font-medium text-stone-900">
-            {submission.score ?? 0} / {submission.maxScore}
+            当前得分：{submission.score ?? 0} / {submission.maxScore}
           </span>
         </div>
       ) : null}
@@ -192,9 +198,9 @@ export default function TaskSubmissionPanel({
                   className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50/70 px-4 py-4"
                 >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Tag color="blue">{questionTypeTextMap[question.type]}</Tag>
+                    <Tag color="blue">{questionTypeLabelMap[question.type]}</Tag>
                     <span className="text-xs text-stone-400">第 {index + 1} 题</span>
-                    <span className="text-xs text-stone-400">{question.score} 分</span>
+                    <span className="text-xs text-stone-400">分值：{question.score} 分</span>
                   </div>
                   <h3 className="text-base font-semibold text-stone-900">{question.title}</h3>
                   {question.description ? (
@@ -229,7 +235,8 @@ export default function TaskSubmissionPanel({
                           updateAnswerValue(
                             question.id,
                             values.map((item) => String(item)),
-                          )}
+                          )
+                        }
                         disabled={!canEditSubmission}
                       >
                         <div className="space-y-2">
@@ -267,8 +274,10 @@ export default function TaskSubmissionPanel({
                   {submission?.status === 'graded' ? (
                     <div className="mt-4 rounded-[16px] bg-white px-4 py-3 text-sm text-stone-600">
                       <div>
-                        本题得分：<span className="font-semibold text-stone-900">{getEffectiveScore(answer)}</span> /{' '}
-                        {question.score}
+                        本题得分：
+                        <span className="font-semibold text-stone-900">
+                          {getQuestionScoreText(getQuestionScore(answer), question.score)}
+                        </span>
                       </div>
                       {answer?.comments ? (
                         <div className="mt-2 whitespace-pre-wrap leading-7">{answer.comments}</div>
@@ -286,7 +295,7 @@ export default function TaskSubmissionPanel({
             rows={5}
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="补充说明或提交备注"
+            placeholder="补充提交说明或备注"
             disabled={!canEditSubmission}
           />
         </Form.Item>

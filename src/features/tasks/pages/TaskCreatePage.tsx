@@ -8,7 +8,7 @@ import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 
-function supportsQuestionDesign(taskType: TaskType) {
+function supportsQuestionSelection(taskType: TaskType) {
   return taskType === 'homework' || taskType === 'quiz'
 }
 
@@ -30,7 +30,7 @@ export default function TaskCreatePage() {
       questionBankIds: string[]
     }) => {
       const task = await taskService.createTask(values)
-      if (supportsQuestionDesign(values.type) && questionBankIds.length) {
+      if (supportsQuestionSelection(values.type) && questionBankIds.length) {
         await taskService.addTaskQuestionsFromBank(task.id, { questionBankIds })
       }
       return task

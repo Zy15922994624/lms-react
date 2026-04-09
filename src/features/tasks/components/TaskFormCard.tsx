@@ -45,25 +45,15 @@ const taskTypeOptions: Array<{ label: string; value: TaskType }> = [
   { label: '阅读', value: 'reading' },
 ]
 
-const questionTypeTextMap: Record<QuestionType, string> = {
-  single_choice: '单选',
-  multi_choice: '多选',
-  fill_text: '填空',
-  rich_text: '简答',
+const questionTypeLabelMap: Record<QuestionType, string> = {
+  single_choice: '单选题',
+  multi_choice: '多选题',
+  fill_text: '填空题',
+  rich_text: '简答题',
 }
 
-function supportsQuestionDesign(taskType: TaskType) {
+function supportsQuestionSelection(taskType: TaskType) {
   return taskType === 'homework' || taskType === 'quiz'
-}
-
-function getTaskScorePreset(taskType: TaskType) {
-  return {
-    totalScore: 100,
-    passingScore: 60,
-    description: supportsQuestionDesign(taskType)
-      ? '作业和测验题目合计必须调整到 100 分'
-      : '项目和阅读默认按 100/60 计分',
-  }
 }
 
 function toUploadFileList(attachments: TaskFile[] = []): AttachmentUploadFile[] {
@@ -128,24 +118,12 @@ export default function TaskFormCard({
   const assignmentMode =
     (Form.useWatch('assignmentMode', form) as 'all' | 'selected' | undefined) ?? 'all'
   const isPublished = Boolean(Form.useWatch('isPublished', form))
-  const shouldPickQuestions = enableDraftQuestionSelection && supportsQuestionDesign(selectedType)
-  const shouldAutoCalculateScore = supportsQuestionDesign(selectedType)
+  const shouldPickQuestions = enableDraftQuestionSelection && supportsQuestionSelection(selectedType)
   const draftQuestionTotalScore = useMemo(
     () => draftQuestionRows.reduce((sum, item) => sum + item.score, 0),
     [draftQuestionRows],
   )
-  const scorePreset = getTaskScorePreset(selectedType)
-  const isQuestionScoreValid = !shouldAutoCalculateScore || draftQuestionTotalScore === 100
-  const questionSummaryText = shouldAutoCalculateScore
-    ? shouldPickQuestions
-      ? `${draftQuestionRows.length} 题`
-      : '下方调整'
-    : '不需要'
-  const questionScoreSummaryText = shouldAutoCalculateScore
-    ? shouldPickQuestions
-      ? `${draftQuestionTotalScore}/100`
-      : '下方查看'
-    : '-'
+  const isQuestionScoreValid = !shouldPickQuestions || draftQuestionTotalScore === 100
 
   const { data: courseStudents } = useQuery({
     queryKey: ['task-form-members', selectedCourseId],
@@ -216,8 +194,8 @@ export default function TaskFormCard({
         render: (value: string, record) => (
           <div className="min-w-0">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <Tag>{questionTypeTextMap[record.type]}</Tag>
-              <span className="text-xs text-stone-400">{record.score} 分</span>
+              <Tag>{questionTypeLabelMap[record.type]}</Tag>
+              <span className="text-xs text-stone-400">分值：{record.score} 分</span>
             </div>
             <div className="text-sm font-medium text-stone-900">{value}</div>
           </div>
@@ -254,8 +232,8 @@ export default function TaskFormCard({
           <div className="min-w-0">
             <div className="truncate text-sm font-medium text-stone-900">{value}</div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-400">
-              <span>{questionTypeTextMap[record.type]}</span>
-              <span>{record.score} 分</span>
+              <span>{questionTypeLabelMap[record.type]}</span>
+              <span>分值：{record.score}</span>
             </div>
           </div>
         ),
@@ -331,15 +309,13 @@ export default function TaskFormCard({
     }
 
     if (shouldPickQuestions && draftQuestionTotalScore !== 100) {
-      uiMessage.warning(`当前题目合计 ${draftQuestionTotalScore} 分，请调整到 100 分后再创建`)
+      uiMessage.warning(`当前题目总分为 ${draftQuestionTotalScore} 分，请调整到 100 分后再提交`)
       return
     }
 
     setUploading(true)
     try {
       const attachments = await uploadAttachments(attachmentFileList)
-      const totalScore = scorePreset.totalScore
-      const passingScore = scorePreset.passingScore
       await onSubmit(
         {
           courseId: String(values.courseId),
@@ -347,8 +323,8 @@ export default function TaskFormCard({
           description: String(values.description || '').trim(),
           type: values.type as TaskType,
           dueDate: dayjs(values.dueDate as dayjs.Dayjs).toISOString(),
-          totalScore,
-          passingScore,
+          totalScore: 100,
+          passingScore: 60,
           assignmentMode: values.assignmentMode as 'all' | 'selected',
           assignedStudentIds:
             values.assignmentMode === 'selected'
@@ -371,36 +347,36 @@ export default function TaskFormCard({
   return (
     <>
       <section className="app-panel overflow-hidden border border-[rgba(28,25,23,0.06)] bg-white">
-        <Form form={form} layout="vertical" onFinish={handleFinish} className="space-y-6">
-          <div className="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1fr)_280px] xl:px-7">
-            <div className="space-y-5">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Form.Item
-                  label="所属课程"
-                  name="courseId"
-                  rules={[{ required: true, message: '请选择课程' }]}
-                  className="!mb-0"
-                >
-                  <Select
-                    placeholder="选择课程"
-                    options={courses.map((course) => ({
-                      label: course.title,
-                      value: course.id,
-                    }))}
-                    disabled={mode === 'edit'}
-                  />
-                </Form.Item>
+        <Form form={form} layout="vertical" onFinish={handleFinish} className="space-y-0">
+          <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6 xl:px-7">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Form.Item
+                label="所属课程"
+                name="courseId"
+                rules={[{ required: true, message: '请选择课程' }]}
+                className="!mb-0"
+              >
+                <Select
+                  placeholder="选择课程"
+                  options={courses.map((course) => ({
+                    label: course.title,
+                    value: course.id,
+                  }))}
+                  disabled={mode === 'edit'}
+                />
+              </Form.Item>
 
-                <Form.Item
-                  label="任务类型"
-                  name="type"
-                  rules={[{ required: true, message: '请选择任务类型' }]}
-                  className="!mb-0"
-                >
-                  <Segmented block options={taskTypeOptions} />
-                </Form.Item>
-              </div>
+              <Form.Item
+                label="任务类型"
+                name="type"
+                rules={[{ required: true, message: '请选择任务类型' }]}
+                className="!mb-0"
+              >
+                <Segmented block options={taskTypeOptions} />
+              </Form.Item>
+            </div>
 
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <Form.Item
                 label="任务标题"
                 name="title"
@@ -410,212 +386,161 @@ export default function TaskFormCard({
                 <Input placeholder="输入任务标题" maxLength={100} />
               </Form.Item>
 
-              <Form.Item label="任务描述" name="description" className="!mb-0">
-                <Input.TextArea rows={4} placeholder="补充任务要求或提交说明" maxLength={4000} />
+              <div className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-xs text-stone-400">总分</div>
+                    <div className="mt-1 font-semibold text-stone-900">100 分</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-stone-400">及格分</div>
+                    <div className="mt-1 font-semibold text-stone-900">60 分</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-stone-400">发布状态</div>
+                    <div className="mt-1 font-semibold text-stone-900">
+                      {isPublished ? '立即可见' : '草稿'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-stone-400">分配范围</div>
+                    <div className="mt-1 font-semibold text-stone-900">
+                      {assignmentMode === 'selected' ? '定向学生' : '全班学生'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Form.Item label="任务说明" name="description" className="!mb-0">
+              <Input.TextArea rows={4} placeholder="补充任务要求" maxLength={4000} />
+            </Form.Item>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Form.Item
+                label="截止时间"
+                name="dueDate"
+                rules={[{ required: true, message: '请选择截止时间' }]}
+                className="!mb-0"
+              >
+                <DatePicker showTime className="w-full" />
               </Form.Item>
 
-              {shouldPickQuestions ? (
-                <section className="rounded-[20px] border border-[rgba(255,107,53,0.14)] bg-[rgba(255,107,53,0.04)] px-4 py-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="text-sm font-semibold text-stone-900">题目清单</div>
-                      <div className={`mt-1 text-xs ${isQuestionScoreValid ? 'text-stone-500' : 'text-rose-500'}`}>
-                        {isQuestionScoreValid
-                          ? `当前题目合计 ${draftQuestionTotalScore}/100 分`
-                          : `当前题目合计 ${draftQuestionTotalScore}/100 分，请继续调整`}
-                      </div>
-                    </div>
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        if (!selectedCourseId) {
-                          uiMessage.warning('请先选择课程，再添加题目')
-                          return
-                        }
-                        setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
-                        setIsPickerOpen(true)
-                      }}
-                    >
-                      添加题目
-                    </Button>
-                  </div>
+              <Form.Item label="分配范围" name="assignmentMode" className="!mb-0">
+                <Radio.Group optionType="button" buttonStyle="solid" className="w-full">
+                  <Radio.Button value="all">全班</Radio.Button>
+                  <Radio.Button value="selected">定向</Radio.Button>
+                </Radio.Group>
+              </Form.Item>
 
-                  <div className="mt-4">
-                    <Table<QuestionBankItem>
-                      rowKey="id"
-                      size="small"
-                      dataSource={draftQuestionRows}
-                      columns={draftQuestionColumns}
-                      pagination={false}
-                      locale={{ emptyText: '请先添加题目' }}
-                      scroll={{ x: 520 }}
-                    />
-                  </div>
-                </section>
-              ) : null}
-
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Form.Item
-                  label="截止时间"
-                  name="dueDate"
-                  rules={[{ required: true, message: '请选择截止时间' }]}
-                  className="!mb-0"
-                >
-                  <DatePicker showTime className="w-full" />
-                </Form.Item>
-
-                <Form.Item label="分配范围" name="assignmentMode" className="!mb-0">
-                  <Radio.Group optionType="button" buttonStyle="solid" className="w-full">
-                    <Radio.Button value="all">全班</Radio.Button>
-                    <Radio.Button value="selected">定向</Radio.Button>
-                  </Radio.Group>
-                </Form.Item>
-              </div>
-
-              <section className="rounded-[20px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-4">
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
-                        固定总分
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-900">
-                        {scorePreset.totalScore}
-                    </div>
-                    <div className="mt-1 text-xs text-stone-500">{scorePreset.description}</div>
-                  </div>
-                    <div>
-                      <div className="text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
-                        固定及格分
-                      </div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-900">
-                        {scorePreset.passingScore}
-                      </div>
-                      <div className="mt-1 text-xs text-stone-500">
-                        {shouldAutoCalculateScore ? '题目分值必须凑满 100 分' : '无需单独设置'}
-                      </div>
-                    </div>
-                  </div>
-              </section>
-
-              {assignmentMode === 'selected' ? (
-                <Form.Item
-                  label="指定学生"
-                  name="assignedStudentIds"
-                  rules={[{ required: true, message: '请至少选择一名学生' }]}
-                  className="!mb-0"
-                >
-                  <Select
-                    mode="multiple"
-                    placeholder="选择学生"
-                    options={studentOptions}
-                    loading={Boolean(selectedCourseId) && !courseStudents}
-                  />
-                </Form.Item>
-              ) : null}
-
-              {selectedType === 'reading' ? (
-                <Form.Item label="推荐资源" name="relatedResourceIds" className="!mb-0">
-                  <Select
-                    mode="multiple"
-                    placeholder="选择资源"
-                    options={resourceOptions}
-                    loading={Boolean(selectedCourseId) && !resourcesPage}
-                  />
-                </Form.Item>
-              ) : null}
-
-              <Form.Item label="任务附件" className="!mb-0">
-                <Upload
-                  multiple
-                  fileList={attachmentFileList}
-                  beforeUpload={(file) => {
-                    setAttachmentFileList((current) => [
-                      ...current,
-                      {
-                        uid: `${file.uid}-${Date.now()}`,
-                        name: file.name,
-                        status: 'done',
-                        originFileObj: file,
-                      },
-                    ])
-                    return false
-                  }}
-                  onRemove={(file) => {
-                    setAttachmentFileList((current) => current.filter((item) => item.uid !== file.uid))
-                  }}
-                >
-                  <Button>选择附件</Button>
-                </Upload>
+              <Form.Item
+                label="发布状态"
+                name="isPublished"
+                valuePropName="checked"
+                className="!mb-0"
+              >
+                <div className="flex h-[54px] items-center rounded-[14px] border border-[rgba(28,25,23,0.08)] px-4">
+                  <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                </div>
               </Form.Item>
             </div>
 
-            <aside className="space-y-4">
-              <section className="rounded-[20px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">
-                  当前设置
+            {shouldPickQuestions ? (
+              <section className="rounded-[20px] border border-[rgba(255,107,53,0.14)] bg-[rgba(255,107,53,0.04)] px-4 py-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-stone-900">题目</div>
+                    <div className={`mt-1 text-xs ${isQuestionScoreValid ? 'text-stone-500' : 'text-rose-500'}`}>
+                      题目总分：{draftQuestionTotalScore}/100
+                      {isQuestionScoreValid ? '' : '，请继续调整'}
+                    </div>
+                  </div>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      if (!selectedCourseId) {
+                        uiMessage.warning('请先选择课程，再添加题目')
+                        return
+                      }
+                      setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
+                      setIsPickerOpen(true)
+                    }}
+                  >
+                    添加题目
+                  </Button>
                 </div>
-                <div className="mt-3 space-y-3 text-sm text-stone-600">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>类型</span>
-                    <span className="font-medium text-stone-900">
-                      {taskTypeOptions.find((item) => item.value === selectedType)?.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>分配</span>
-                    <span className="font-medium text-stone-900">
-                      {assignmentMode === 'selected' ? '定向' : '全班'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>题目</span>
-                    <span className="font-medium text-stone-900">{questionSummaryText}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>选题合计</span>
-                    <span className={`font-medium ${isQuestionScoreValid ? 'text-stone-900' : 'text-rose-500'}`}>
-                      {questionScoreSummaryText}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>发布</span>
-                    <span className="font-medium text-stone-900">
-                      {isPublished ? '立即可见' : '草稿'}
-                    </span>
-                  </div>
+
+                <div className="mt-4">
+                  <Table<QuestionBankItem>
+                    rowKey="id"
+                    size="small"
+                    dataSource={draftQuestionRows}
+                    columns={draftQuestionColumns}
+                    pagination={false}
+                    locale={{ emptyText: '请先添加题目' }}
+                    scroll={{ x: 520 }}
+                  />
                 </div>
               </section>
+            ) : null}
 
-              <Form.Item label="发布状态" name="isPublished" valuePropName="checked" className="!mb-0">
-                <div className="rounded-[20px] border border-[rgba(28,25,23,0.08)] bg-white px-4 py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium text-stone-900">发布状态</div>
-                      <div className="mt-1 text-xs text-stone-400">
-                        关闭后任务会先保存为草稿
-                      </div>
-                    </div>
-                    <Switch checkedChildren="发布" unCheckedChildren="草稿" />
-                  </div>
-                </div>
+            {assignmentMode === 'selected' ? (
+              <Form.Item
+                label="指定学生"
+                name="assignedStudentIds"
+                rules={[{ required: true, message: '请至少选择一名学生' }]}
+                className="!mb-0"
+              >
+                <Select
+                  mode="multiple"
+                  placeholder="选择学生"
+                  options={studentOptions}
+                  loading={Boolean(selectedCourseId) && !courseStudents}
+                />
               </Form.Item>
-            </aside>
+            ) : null}
+
+            {selectedType === 'reading' ? (
+              <Form.Item label="关联资源" name="relatedResourceIds" className="!mb-0">
+                <Select
+                  mode="multiple"
+                  placeholder="选择资源"
+                  options={resourceOptions}
+                  loading={Boolean(selectedCourseId) && !resourcesPage}
+                />
+              </Form.Item>
+            ) : null}
+
+            <Form.Item label="任务附件" className="!mb-0">
+              <Upload
+                multiple
+                fileList={attachmentFileList}
+                beforeUpload={(file) => {
+                  setAttachmentFileList((current) => [
+                    ...current,
+                    {
+                      uid: `${file.uid}-${Date.now()}`,
+                      name: file.name,
+                      status: 'done',
+                      originFileObj: file,
+                    },
+                  ])
+                  return false
+                }}
+                onRemove={(file) => {
+                  setAttachmentFileList((current) => current.filter((item) => item.uid !== file.uid))
+                }}
+              >
+                <Button>选择附件</Button>
+              </Upload>
+            </Form.Item>
           </div>
 
           <div className="sticky bottom-0 z-10 border-t border-[rgba(28,25,23,0.06)] bg-white/92 px-5 py-4 backdrop-blur sm:px-6 xl:px-7">
             <div className="flex flex-wrap items-center justify-end gap-3">
               <Button onClick={onCancel}>取消</Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting || uploading}
-                onClick={() => {
-                  if (assignmentMode === 'selected' && !selectedCourseId) {
-                    uiMessage.warning('请先选择课程，再指定学生')
-                  }
-                }}
-              >
-                {mode === 'create' ? '创建任务' : '保存'}
+              <Button type="primary" htmlType="submit" loading={submitting || uploading}>
+                {mode === 'create' ? '创建任务' : '保存修改'}
               </Button>
             </div>
           </div>
@@ -626,7 +551,7 @@ export default function TaskFormCard({
         open={isPickerOpen}
         title="添加题目"
         width={880}
-        okText="加入清单"
+        okText="加入列表"
         cancelText="取消"
         onCancel={() => setIsPickerOpen(false)}
         onOk={() => {
@@ -642,7 +567,7 @@ export default function TaskFormCard({
           setDraftQuestionRows(nextRows)
           setIsPickerOpen(false)
           if (nextTotalScore !== 100) {
-            uiMessage.warning(`当前题目合计 ${nextTotalScore} 分，请继续调整到 100 分`)
+            uiMessage.warning(`当前题目总分为 ${nextTotalScore} 分，请继续调整到 100 分`)
           }
         }}
       >
@@ -659,10 +584,10 @@ export default function TaskFormCard({
             value={questionFilterType}
             options={[
               { label: '全部题型', value: 'all' },
-              { label: '单选', value: 'single_choice' },
-              { label: '多选', value: 'multi_choice' },
-              { label: '填空', value: 'fill_text' },
-              { label: '简答', value: 'rich_text' },
+              { label: '单选题', value: 'single_choice' },
+              { label: '多选题', value: 'multi_choice' },
+              { label: '填空题', value: 'fill_text' },
+              { label: '简答题', value: 'rich_text' },
             ]}
             onChange={(value) => setQuestionFilterType(value)}
           />
@@ -684,9 +609,7 @@ export default function TaskFormCard({
           scroll={{ x: 640 }}
         />
 
-        <div className="mt-3 text-xs text-stone-400">
-          已选 {modalSelectedRowKeys.length} 题
-        </div>
+        <div className="mt-3 text-xs text-stone-400">已选 {modalSelectedRowKeys.length} 题</div>
       </Modal>
     </>
   )
