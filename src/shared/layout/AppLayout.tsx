@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageContainer from '@/shared/layout/PageContainer'
 import { resolvePageWidthMode } from '@/shared/layout/page-width'
@@ -70,9 +71,7 @@ export default function AppLayout() {
         hasRole(['teacher', 'admin'])
           ? { key: 'question-bank', icon: <BookOutlined />, label: '题库管理' }
           : null,
-        hasRole(['admin'])
-          ? { key: 'users', icon: <UserOutlined />, label: '用户管理' }
-          : null,
+        hasRole(['admin']) ? { key: 'users', icon: <UserOutlined />, label: '用户管理' } : null,
       ].filter(Boolean),
     [hasRole],
   )
@@ -204,24 +203,30 @@ export default function AppLayout() {
               </div>
             </div>
 
-            <Dropdown menu={{ items: userMenuItems, onClick: handleMenuClick }} trigger={['click']}>
-              <button
-                type="button"
-                className="flex items-center gap-3 rounded-[20px] border border-[var(--lms-color-border)] bg-white/95 px-2 py-2 text-left shadow-[0_12px_30px_rgba(28,25,23,0.06)] transition hover:border-[rgba(255,107,53,0.18)] hover:shadow-[0_14px_34px_rgba(28,25,23,0.08)]"
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <Dropdown
+                menu={{ items: userMenuItems, onClick: handleMenuClick }}
+                trigger={['click']}
               >
-                <Avatar
-                  size={40}
-                  src={currentUser?.avatar ? currentUser.avatar : undefined}
-                  icon={<UserOutlined />}
-                />
-                <div className="hidden sm:block">
-                  <div className="text-sm font-medium text-stone-900">
-                    {currentUser?.fullName || currentUser?.username || '用户'}
+                <button
+                  type="button"
+                  className="flex items-center gap-3 rounded-[20px] border border-[var(--lms-color-border)] bg-white/95 px-2 py-2 text-left shadow-[0_12px_30px_rgba(28,25,23,0.06)] transition hover:border-[rgba(255,107,53,0.18)] hover:shadow-[0_14px_34px_rgba(28,25,23,0.08)]"
+                >
+                  <Avatar
+                    size={40}
+                    src={currentUser?.avatar ? currentUser.avatar : undefined}
+                    icon={<UserOutlined />}
+                  />
+                  <div className="hidden sm:block">
+                    <div className="text-sm font-medium text-stone-900">
+                      {currentUser?.fullName || currentUser?.username || '用户'}
+                    </div>
+                    <div className="text-xs text-stone-500">{role ? roleText[role] : '访客'}</div>
                   </div>
-                  <div className="text-xs text-stone-500">{role ? roleText[role] : '访客'}</div>
-                </div>
-              </button>
-            </Dropdown>
+                </button>
+              </Dropdown>
+            </div>
           </div>
         </Header>
 

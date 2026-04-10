@@ -9,6 +9,7 @@ import CourseOverviewPage from '@/features/courses/pages/CourseOverviewPage'
 import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
 import CourseResourcesPage from '@/features/courses/pages/CourseResourcesPage'
 import CourseDiscussionsPage from '@/features/courses/pages/CourseDiscussionsPage'
+import NotificationsPage from '@/features/notifications/pages/NotificationsPage'
 import QuestionBankPage from '@/features/question-bank/pages/QuestionBankPage'
 import TasksPage from '@/features/tasks/pages/TasksPage'
 import TaskCreatePage from '@/features/tasks/pages/TaskCreatePage'
@@ -40,9 +41,11 @@ export default function AppRouter() {
           <Route
             index
             element={
-              isLoggedIn
-                ? <Navigate to={getRoleHomePath(userRole())} replace />
-                : <Navigate to={ROUTES.LOGIN} replace />
+              isLoggedIn ? (
+                <Navigate to={getRoleHomePath(userRole())} replace />
+              ) : (
+                <Navigate to={ROUTES.LOGIN} replace />
+              )
             }
           />
           <Route
@@ -138,6 +141,14 @@ export default function AppRouter() {
             element={
               <ProtectedRoute roles={['teacher', 'admin']}>
                 <QuestionBankPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <ProtectedRoute roles={['student']}>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />
