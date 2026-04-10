@@ -15,7 +15,6 @@ interface UserFormModalProps {
 const roleOptions: Array<{ label: string; value: UserRole }> = [
   { label: '学生', value: 'student' },
   { label: '教师', value: 'teacher' },
-  { label: '管理员', value: 'admin' },
 ]
 
 export default function UserFormModal({
@@ -87,7 +86,7 @@ export default function UserFormModal({
               { max: 30, message: '用户名不能超过 30 个字符' },
             ]}
           >
-            <Input placeholder="输入用户名" />
+            <Input placeholder="输入用户名" disabled={isEditMode} />
           </Form.Item>
 
           <Form.Item
@@ -111,11 +110,7 @@ export default function UserFormModal({
             <Input placeholder="输入邮箱" />
           </Form.Item>
 
-          <Form.Item
-            label="角色"
-            name="role"
-            rules={[{ required: true, message: '请选择角色' }]}
-          >
+          <Form.Item label="角色" name="role" rules={[{ required: true, message: '请选择角色' }]}>
             <Select options={roleOptions} disabled={isEditingCurrentUser} />
           </Form.Item>
         </div>

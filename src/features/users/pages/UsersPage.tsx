@@ -35,7 +35,11 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserManagementItem | null>(null)
 
-  const { data: userPage, isLoading, isFetching } = useQuery({
+  const {
+    data: userPage,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ['users', currentPage, pageSize, selectedRole, searchKeyword],
     queryFn: () =>
       userManagementService.getUsers({
@@ -96,6 +100,7 @@ export default function UsersPage() {
       title: '账号',
       dataIndex: 'username',
       key: 'username',
+      align: 'center',
       render: (_value, record) => (
         <div className="min-w-0 space-y-1 py-1">
           <div className="truncate text-base font-semibold text-stone-950">{record.username}</div>
@@ -108,6 +113,7 @@ export default function UsersPage() {
       dataIndex: 'email',
       key: 'email',
       width: 260,
+      align: 'center',
       render: (value: string) => <span className="text-stone-600">{value}</span>,
     },
     {
@@ -115,6 +121,7 @@ export default function UsersPage() {
       dataIndex: 'role',
       key: 'role',
       width: 120,
+      align: 'center',
       render: (value: UserManagementItem['role']) => (
         <Tag color={roleColorMap[value]}>{roleLabelMap[value]}</Tag>
       ),
@@ -124,12 +131,14 @@ export default function UsersPage() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
+      align: 'center',
       render: (value?: string) => (value ? formatDateTime(value) : '—'),
     },
     {
       title: '操作',
       key: 'actions',
       width: 160,
+      align: 'center',
       render: (_value, record) => {
         const isCurrentUser = record.id === currentUser?.id
         const canDelete = !isCurrentUser && record.role !== 'admin'
@@ -201,15 +210,6 @@ export default function UsersPage() {
                 ))}
               </div>
             </section>
-
-            <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
-              <h2 className="app-section-title">管理限制</h2>
-              <div className="mt-4 space-y-3 text-sm text-stone-600">
-                <div>当前登录账号不能删除。</div>
-                <div>管理员账号不能删除。</div>
-                <div>编辑时密码留空则不修改。</div>
-              </div>
-            </section>
           </div>
         }
       >
@@ -270,7 +270,9 @@ export default function UsersPage() {
             dataSource={users}
             columns={columns}
             pagination={false}
-            locale={{ emptyText: <Empty description="暂无用户" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+            locale={{
+              emptyText: <Empty description="暂无用户" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+            }}
           />
 
           {total > 0 ? (
