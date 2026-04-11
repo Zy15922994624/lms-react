@@ -126,7 +126,7 @@ export default function AppLayout() {
           </div>
           <div className="min-w-0">
             <Typography.Text strong className="block text-[15px] text-stone-900">
-              LMS 学习任务系统
+              学习任务系统
             </Typography.Text>
           </div>
         </div>
@@ -214,13 +214,6 @@ export default function AppLayout() {
                   <MenuOutlined />
                 </button>
               ) : null}
-
-              <div className="flex items-center gap-3">
-                <span className="hidden h-8 w-px bg-[var(--lms-color-border)] sm:block" />
-                <div className="text-lg font-semibold tracking-[-0.02em] text-stone-900">
-                  {role ? workspaceLabelMap[role] : '工作区'}
-                </div>
-              </div>
             </div>
 
             <div className="flex items-center gap-3">
