@@ -59,7 +59,11 @@ export default function TasksPage() {
     queryFn: () => courseService.getCourses(true, 1, 100),
   })
 
-  const { data: taskPage, isLoading, isFetching } = useQuery({
+  const {
+    data: taskPage,
+    isLoading,
+    isFetching,
+  } = useQuery({
     queryKey: ['tasks', page, pageSize, selectedCourseId, selectedType, searchKeyword],
     queryFn: () =>
       taskService.getTasks({
@@ -98,10 +102,7 @@ export default function TasksPage() {
   const focusTasks = useMemo(
     () =>
       [...tasks]
-        .sort(
-          (left, right) =>
-            new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
-        )
+        .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
         .slice(0, 5),
     [tasks],
   )
@@ -134,6 +135,7 @@ export default function TasksPage() {
         title: '任务',
         dataIndex: 'taskTitle',
         key: 'taskTitle',
+        align: 'center',
         render: (value: string, record) => (
           <button
             type="button"
@@ -149,11 +151,13 @@ export default function TasksPage() {
         dataIndex: 'studentName',
         key: 'studentName',
         width: 120,
+        align: 'center',
       },
       {
         title: '提交时间',
         dataIndex: 'submittedAt',
         key: 'submittedAt',
+        align: 'center',
         width: 172,
         render: (value: string) => formatDateTime(value),
       },
@@ -167,6 +171,7 @@ export default function TasksPage() {
         title: '任务',
         dataIndex: 'title',
         key: 'title',
+        align: 'center',
         render: (value: string, record) => (
           <button
             type="button"
@@ -182,6 +187,7 @@ export default function TasksPage() {
         dataIndex: 'dueDate',
         key: 'dueDate',
         width: 172,
+        align: 'center',
         render: (value: string) => (
           <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
         ),
@@ -197,6 +203,7 @@ export default function TasksPage() {
         dataIndex: 'title',
         key: 'title',
         width: 360,
+        align: 'center',
         render: (value: string, record) => (
           <div className="min-w-0">
             <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -221,6 +228,7 @@ export default function TasksPage() {
         dataIndex: ['course', 'title'],
         key: 'course',
         width: 180,
+        align: 'center',
         render: (_value, record) => record.course?.title || '-',
       },
       {
@@ -228,6 +236,7 @@ export default function TasksPage() {
         dataIndex: 'dueDate',
         key: 'dueDate',
         width: 180,
+        align: 'center',
         render: (value: string) => (
           <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
         ),
@@ -236,6 +245,7 @@ export default function TasksPage() {
         title: isTeacherView ? '提交情况' : '状态',
         key: 'status',
         width: 150,
+        align: 'center',
         render: (_value, record) =>
           isTeacherView
             ? `${record.submittedCount}/${record.assignedStudentCount}`
@@ -375,7 +385,11 @@ export default function TasksPage() {
               }}
             />
             {isTeacherView ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/create')}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/tasks/create')}
+              >
                 创建任务
               </Button>
             ) : null}
@@ -418,9 +432,7 @@ export default function TasksPage() {
           deleteMutation.mutate(pendingDeleteTask.id)
         }}
       >
-        <p className="text-sm leading-7 text-stone-500">
-          删除后，任务、定向分配和学生提交会一起移除，请确认是否继续。
-        </p>
+        <p className="text-sm leading-7 text-stone-500">是否删除任务</p>
       </Modal>
     </div>
   )

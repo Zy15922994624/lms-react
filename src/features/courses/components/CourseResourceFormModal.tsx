@@ -57,12 +57,13 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
   const [form] = Form.useForm<CourseResourceFormValues>()
   const [isDragActive, setIsDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const { selectedFile, uploading, selectFile, clearSelection, uploadSelectedFile } = useDeferredUpload({
-    scene: 'attachment',
-    maxSizeInMb: 50,
-    invalidTypeMessage: '当前文件类型暂不支持上传',
-    invalidSizeMessage: '文件大小不能超过 50MB',
-  })
+  const { selectedFile, uploading, selectFile, clearSelection, uploadSelectedFile } =
+    useDeferredUpload({
+      scene: 'attachment',
+      maxSizeInMb: 50,
+      invalidTypeMessage: '当前文件类型暂不支持上传',
+      invalidSizeMessage: '文件大小不能超过 50MB',
+    })
 
   useEffect(() => {
     if (!open) {
@@ -157,11 +158,19 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
         requiredMark={false}
         onFinish={handleFinish}
       >
-        <Form.Item label="资源标题" name="title" rules={[{ required: true, message: '请输入资源标题' }]}>
+        <Form.Item
+          label="资源标题"
+          name="title"
+          rules={[{ required: true, message: '请输入资源标题' }]}
+        >
           <Input placeholder="例如：第一章实验指导书" maxLength={100} />
         </Form.Item>
 
-        <Form.Item label="资源类型" name="type" rules={[{ required: true, message: '请选择资源类型' }]}>
+        <Form.Item
+          label="资源类型"
+          name="type"
+          rules={[{ required: true, message: '请选择资源类型' }]}
+        >
           <Select options={resourceTypeOptions} />
         </Form.Item>
 
@@ -196,7 +205,9 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
                     {selectedFile ? selectedFile.name : '拖拽文件到这里，或点击选择文件'}
                   </div>
                   <div className="mt-1 text-xs leading-6 text-stone-500">
-                    {selectedFile ? `文件大小 ${formatFileSize(selectedFile.size)}` : '单文件不超过 50MB'}
+                    {selectedFile
+                      ? `文件大小 ${formatFileSize(selectedFile.size)}`
+                      : '单文件不超过 50MB'}
                   </div>
 
                   {selectedFile ? (

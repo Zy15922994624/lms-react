@@ -118,7 +118,8 @@ export default function TaskFormCard({
   const assignmentMode =
     (Form.useWatch('assignmentMode', form) as 'all' | 'selected' | undefined) ?? 'all'
   const isPublished = Boolean(Form.useWatch('isPublished', form))
-  const shouldPickQuestions = enableDraftQuestionSelection && supportsQuestionSelection(selectedType)
+  const shouldPickQuestions =
+    enableDraftQuestionSelection && supportsQuestionSelection(selectedType)
   const draftQuestionTotalScore = useMemo(
     () => draftQuestionRows.reduce((sum, item) => sum + item.score, 0),
     [draftQuestionRows],
@@ -385,31 +386,6 @@ export default function TaskFormCard({
               >
                 <Input placeholder="输入任务标题" maxLength={100} />
               </Form.Item>
-
-              <div className="rounded-[18px] border border-[rgba(28,25,23,0.08)] bg-stone-50 px-4 py-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-xs text-stone-400">总分</div>
-                    <div className="mt-1 font-semibold text-stone-900">100 分</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-stone-400">及格分</div>
-                    <div className="mt-1 font-semibold text-stone-900">60 分</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-stone-400">发布状态</div>
-                    <div className="mt-1 font-semibold text-stone-900">
-                      {isPublished ? '立即可见' : '草稿'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-stone-400">分配范围</div>
-                    <div className="mt-1 font-semibold text-stone-900">
-                      {assignmentMode === 'selected' ? '定向学生' : '全班学生'}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <Form.Item label="任务说明" name="description" className="!mb-0">
@@ -448,13 +424,6 @@ export default function TaskFormCard({
             {shouldPickQuestions ? (
               <section className="rounded-[20px] border border-[rgba(255,107,53,0.14)] bg-[rgba(255,107,53,0.04)] px-4 py-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-stone-900">题目</div>
-                    <div className={`mt-1 text-xs ${isQuestionScoreValid ? 'text-stone-500' : 'text-rose-500'}`}>
-                      题目总分：{draftQuestionTotalScore}/100
-                      {isQuestionScoreValid ? '' : '，请继续调整'}
-                    </div>
-                  </div>
                   <Button
                     type="primary"
                     onClick={() => {
@@ -528,7 +497,9 @@ export default function TaskFormCard({
                   return false
                 }}
                 onRemove={(file) => {
-                  setAttachmentFileList((current) => current.filter((item) => item.uid !== file.uid))
+                  setAttachmentFileList((current) =>
+                    current.filter((item) => item.uid !== file.uid),
+                  )
                 }}
               >
                 <Button>选择附件</Button>
