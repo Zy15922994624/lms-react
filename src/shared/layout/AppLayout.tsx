@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, Typography } from 'antd'
 import {
   BookOutlined,
   CheckSquareOutlined,
-  DashboardOutlined,
   MenuOutlined,
+  NotificationOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { ROUTES } from '@/shared/constants/routes'
@@ -19,26 +19,49 @@ import type { UserRole } from '@/shared/types/user'
 const { Content, Header, Sider } = Layout
 const { useBreakpoint } = Grid
 
-const roleText: Record<UserRole, string> = {
+const roleLabelMap: Record<UserRole, string> = {
   admin: '管理员',
   teacher: '教师',
   student: '学生',
 }
 
-const roleWorkspaceText: Record<UserRole, string> = {
-  admin: '系统工作台',
-  teacher: '教学工作台',
-  student: '学习工作台',
+const workspaceLabelMap: Record<UserRole, string> = {
+  admin: '系统管理',
+  teacher: '教学工作区',
+  student: '学习工作区',
 }
 
-const menuKeyToRoute: Record<string, string> = {
-  dashboard: ROUTES.STUDENT_HOME,
-  'teacher-home': ROUTES.TEACHER_HOME,
+const menuRouteMap: Record<string, string> = {
   tasks: ROUTES.TASKS,
   courses: ROUTES.COURSES,
+  notifications: ROUTES.NOTIFICATIONS,
   'question-bank': ROUTES.QUESTION_BANK,
-  profile: ROUTES.PROFILE,
   users: ROUTES.USERS,
+}
+
+function resolveSelectedKey(pathname: string) {
+  const firstSegment = pathname.split('/')[1]
+  if (firstSegment === 'question-bank') {
+    return 'question-bank'
+  }
+
+  if (firstSegment === 'notifications') {
+    return 'notifications'
+  }
+
+  if (firstSegment === 'users') {
+    return 'users'
+  }
+
+  if (firstSegment === 'courses') {
+    return 'courses'
+  }
+
+  if (firstSegment === 'tasks') {
+    return 'tasks'
+  }
+
+  return ''
 }
 
 export default function AppLayout() {
@@ -50,37 +73,34 @@ export default function AppLayout() {
 
   const role = userRole()
   const isDesktop = Boolean(screens.lg)
-  const selectedKey = location.pathname.split('/')[1] || 'dashboard'
+  const selectedKey = resolveSelectedKey(location.pathname)
   const contentWidthMode = resolvePageWidthMode(location.pathname)
 
-  const menuItems = useMemo(
-    () =>
-      [
-        hasRole(['student'])
-          ? { key: 'dashboard', icon: <DashboardOutlined />, label: '学习总览' }
-          : null,
-        hasRole(['teacher', 'admin'])
-          ? { key: 'teacher-home', icon: <DashboardOutlined />, label: '教学工作台' }
-          : null,
-        hasRole(['teacher', 'student'])
-          ? { key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' }
-          : null,
-        hasRole(['teacher', 'student', 'admin'])
-          ? { key: 'courses', icon: <BookOutlined />, label: '课程空间' }
-          : null,
-        hasRole(['teacher', 'admin'])
-          ? { key: 'question-bank', icon: <BookOutlined />, label: '题库管理' }
-          : null,
-        hasRole(['admin']) ? { key: 'users', icon: <UserOutlined />, label: '用户管理' } : null,
-      ].filter(Boolean),
-    [hasRole],
-  )
+  const menuItems = useMemo(() => {
+    const items: Array<{ key: string; icon: ReactNode; label: string }> = []
 
-  const userMenuItems = [
-    { key: 'profile', label: '个人资料' },
-    { type: 'divider' as const },
-    { key: 'logout', label: '退出登录' },
-  ]
+    if (role === 'student') {
+      items.push({ key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' })
+      items.push({ key: 'courses', icon: <BookOutlined />, label: '课程空间' })
+      items.push({ key: 'notifications', icon: <NotificationOutlined />, label: '通知中心' })
+    }
+
+    if (role === 'teacher') {
+      items.push({ key: 'tasks', icon: <CheckSquareOutlined />, label: '任务中心' })
+      items.push({ key: 'courses', icon: <BookOutlined />, label: '课程空间' })
+      items.push({ key: 'question-bank', icon: <BookOutlined />, label: '题库管理' })
+    }
+
+    if (role === 'admin') {
+      items.push({ key: 'users', icon: <UserOutlined />, label: '用户管理' })
+      items.push({ key: 'courses', icon: <BookOutlined />, label: '课程空间' })
+      items.push({ key: 'question-bank', icon: <BookOutlined />, label: '题库管理' })
+    }
+
+    return items
+  }, [role])
+
+  const userMenuItems = [{ key: 'logout', label: '退出登录' }]
 
   const handleMenuClick = ({ key }: { key: string }) => {
     if (key === 'logout') {
@@ -90,9 +110,9 @@ export default function AppLayout() {
       return
     }
 
-    const target = menuKeyToRoute[key]
-    if (target) {
-      navigate(target)
+    const targetPath = menuRouteMap[key]
+    if (targetPath) {
+      navigate(targetPath)
       setMobileMenuOpen(false)
     }
   }
@@ -116,7 +136,7 @@ export default function AppLayout() {
         <Menu
           mode="inline"
           theme="light"
-          selectedKeys={[selectedKey]}
+          selectedKeys={selectedKey ? [selectedKey] : []}
           onClick={handleMenuClick}
           style={{ border: 'none', background: 'transparent' }}
           items={menuItems}
@@ -130,10 +150,10 @@ export default function AppLayout() {
             当前身份
           </div>
           <div className="mt-3 text-base font-semibold text-stone-900">
-            {role ? roleText[role] : '未登录'}
+            {role ? roleLabelMap[role] : '未登录'}
           </div>
           <div className="mt-1 text-sm text-stone-500">
-            {role ? roleWorkspaceText[role] : '请先登录'}
+            {role ? workspaceLabelMap[role] : '请先登录'}
           </div>
         </div>
       </div>
@@ -198,13 +218,13 @@ export default function AppLayout() {
               <div className="flex items-center gap-3">
                 <span className="hidden h-8 w-px bg-[var(--lms-color-border)] sm:block" />
                 <div className="text-lg font-semibold tracking-[-0.02em] text-stone-900">
-                  {role ? roleWorkspaceText[role] : '学习工作台'}
+                  {role ? workspaceLabelMap[role] : '工作区'}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <NotificationBell />
+              {hasRole(['student']) ? <NotificationBell /> : null}
               <Dropdown
                 menu={{ items: userMenuItems, onClick: handleMenuClick }}
                 trigger={['click']}
@@ -222,7 +242,9 @@ export default function AppLayout() {
                     <div className="text-sm font-medium text-stone-900">
                       {currentUser?.fullName || currentUser?.username || '用户'}
                     </div>
-                    <div className="text-xs text-stone-500">{role ? roleText[role] : '访客'}</div>
+                    <div className="text-xs text-stone-500">
+                      {role ? roleLabelMap[role] : '访客'}
+                    </div>
                   </div>
                 </button>
               </Dropdown>

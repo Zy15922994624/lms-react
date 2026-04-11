@@ -3,12 +3,7 @@ import { ROUTES } from '@/shared/constants/routes'
 export type PageWidthMode = 'narrow' | 'standard' | 'workspace'
 
 export function resolvePageWidthMode(pathname: string): PageWidthMode {
-  if (
-    pathname === ROUTES.COURSES ||
-    pathname === ROUTES.HOME ||
-    pathname === ROUTES.STUDENT_HOME ||
-    pathname === ROUTES.TEACHER_HOME
-  ) {
+  if (pathname === ROUTES.COURSES || pathname === ROUTES.HOME) {
     return 'workspace'
   }
 

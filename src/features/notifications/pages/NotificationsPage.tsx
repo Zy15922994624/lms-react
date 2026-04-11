@@ -90,75 +90,72 @@ export default function NotificationsPage() {
     }
   }
 
-  const columns = useMemo<ColumnsType<NotificationItem>>(
-    () => [
-      {
-        title: '通知',
-        dataIndex: 'title',
-        key: 'title',
-        render: (value: string, record) => (
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Tag color={getNotificationTypeColor(record.type)}>
-                {getNotificationTypeLabel(record.type)}
-              </Tag>
-              {record.isRead ? <Tag>已读</Tag> : <Tag color="orange">未读</Tag>}
-            </div>
-            <button
-              type="button"
-              className="line-clamp-1 text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
-              onClick={() => void handleOpenNotification(record)}
-            >
-              {value}
-            </button>
-            <div className="mt-1 line-clamp-2 text-sm leading-6 text-stone-500">
-              {record.content}
-            </div>
+  const columns: ColumnsType<NotificationItem> = [
+    {
+      title: '通知',
+      dataIndex: 'title',
+      key: 'title',
+      render: (value: string, record) => (
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <Tag color={getNotificationTypeColor(record.type)}>
+              {getNotificationTypeLabel(record.type)}
+            </Tag>
+            {record.isRead ? <Tag>已读</Tag> : <Tag color="orange">未读</Tag>}
           </div>
-        ),
-      },
-      {
-        title: '时间',
-        dataIndex: 'createdAt',
-        key: 'createdAt',
-        width: 188,
-        render: (value: string) => formatDateTime(value),
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        width: 148,
-        render: (_value, record) => (
-          <div className="flex items-center gap-2">
-            {!record.isRead ? (
-              <Button
-                type="link"
-                className="px-0"
-                loading={markAsReadMutation.isPending}
-                onClick={() => markAsReadMutation.mutate(record.id)}
-              >
-                标记已读
-              </Button>
-            ) : null}
-            <Popconfirm
-              title="确定删除这条通知吗？"
-              okText="删除"
-              cancelText="取消"
-              onConfirm={() => deleteMutation.mutate(record.id)}
-            >
-              <Button
-                type="text"
-                shape="circle"
-                icon={<DeleteOutlined />}
-                className="text-stone-400 hover:text-stone-900"
-              />
-            </Popconfirm>
+          <button
+            type="button"
+            className="line-clamp-1 text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
+            onClick={() => void handleOpenNotification(record)}
+          >
+            {value}
+          </button>
+          <div className="mt-1 line-clamp-2 text-sm leading-6 text-stone-500">
+            {record.content}
           </div>
-        ),
-      },
-    ],
-    [deleteMutation, markAsReadMutation, navigate],
-  )
+        </div>
+      ),
+    },
+    {
+      title: '时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 188,
+      render: (value: string) => formatDateTime(value),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 148,
+      render: (_value, record) => (
+        <div className="flex items-center gap-2">
+          {!record.isRead ? (
+            <Button
+              type="link"
+              className="px-0"
+              loading={markAsReadMutation.isPending}
+              onClick={() => markAsReadMutation.mutate(record.id)}
+            >
+              标记已读
+            </Button>
+          ) : null}
+          <Popconfirm
+            title="确定删除这条通知吗？"
+            okText="删除"
+            cancelText="取消"
+            onConfirm={() => deleteMutation.mutate(record.id)}
+          >
+            <Button
+              type="text"
+              shape="circle"
+              icon={<DeleteOutlined />}
+              className="text-stone-400 hover:text-stone-900"
+            />
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ]
 
   if (isLoading && !data) {
     return <PageLoading />
@@ -187,9 +184,7 @@ export default function NotificationsPage() {
                 <div className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
                   {unreadCount}
                 </div>
-                <div className="mt-2 text-sm text-stone-500">
-                  优先关注已过期和即将截止的任务提醒
-                </div>
+                <div className="mt-2 text-sm text-stone-500">优先处理已过期和即将截止的任务提醒</div>
               </div>
 
               <Button

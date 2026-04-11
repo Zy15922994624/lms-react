@@ -2,8 +2,6 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ROUTES, getRoleHomePath } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
-import StudentDashboardPage from '@/features/dashboard/pages/StudentDashboardPage'
-import TeacherDashboardPage from '@/features/dashboard/pages/TeacherDashboardPage'
 import CoursesPage from '@/features/courses/pages/CoursesPage'
 import CourseOverviewPage from '@/features/courses/pages/CourseOverviewPage'
 import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
@@ -46,22 +44,6 @@ export default function AppRouter() {
               ) : (
                 <Navigate to={ROUTES.LOGIN} replace />
               )
-            }
-          />
-          <Route
-            path="teacher-home"
-            element={
-              <ProtectedRoute roles={['teacher', 'admin']}>
-                <TeacherDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="dashboard"
-            element={
-              <ProtectedRoute>
-                <StudentDashboardPage />
-              </ProtectedRoute>
             }
           />
           <Route
