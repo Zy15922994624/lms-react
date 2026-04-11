@@ -474,32 +474,31 @@ export default function CourseResourcesPage() {
   }
 
   return (
-    <CourseWorkspaceFrame
-      course={course}
-      headerActions={
-        canManageResources ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            className="h-11 rounded-full border-0 bg-[var(--lms-color-primary)] px-5 shadow-[0_14px_30px_rgba(255,107,53,0.22)] hover:bg-[var(--lms-color-primary)]"
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            上传资源
-          </Button>
-        ) : null
-      }
-    >
+    <CourseWorkspaceFrame course={course}>
       <WorkspaceLayout preset="resource" aside={renderPreviewPanel()}>
         <div className="app-panel overflow-hidden">
           <div className={`border-b border-[var(--lms-color-border)] ${workspacePanelPadding.section}`}>
-            <div className="max-w-3xl">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
-                课程资源
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="max-w-3xl">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">
+                  课程资源
+                </div>
+                <h2 className="mt-3 text-[clamp(28px,2.4vw,40px)] font-semibold tracking-[-0.04em] text-stone-900">
+                  资源工作台
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-stone-500">{highlightedSummary}</p>
               </div>
-              <h2 className="mt-3 text-[clamp(28px,2.4vw,40px)] font-semibold tracking-[-0.04em] text-stone-900">
-                资源工作台
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-stone-500">{highlightedSummary}</p>
+
+              {canManageResources ? (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  className="h-11 self-start rounded-full border-0 bg-[var(--lms-color-primary)] px-5 shadow-[0_14px_30px_rgba(255,107,53,0.22)] hover:bg-[var(--lms-color-primary)]"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  上传资源
+                </Button>
+              ) : null}
             </div>
 
             <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px_180px] 2xl:grid-cols-[minmax(0,1fr)_200px_200px]">

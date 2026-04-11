@@ -90,17 +90,17 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
     pickFile(event.target.files?.[0])
   }
 
-  const handleDragOver = (event: DragEvent<HTMLButtonElement>) => {
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragActive(true)
   }
 
-  const handleDragLeave = (event: DragEvent<HTMLButtonElement>) => {
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragActive(false)
   }
 
-  const handleDrop = (event: DragEvent<HTMLButtonElement>) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragActive(false)
     pickFile(event.dataTransfer.files?.[0])
@@ -182,9 +182,16 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
           <Form.Item label="资源文件" required>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  fileInputRef.current?.click()
+                }
+              }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -237,13 +244,9 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
                   </Button>
                 ) : null}
               </div>
-            </button>
+            </div>
           </Form.Item>
-        ) : (
-          <div className="rounded-[20px] border border-[var(--lms-color-border)] bg-stone-50 px-4 py-3 text-sm text-stone-500">
-            当前版本先支持编辑资源信息。
-          </div>
-        )}
+        ) : null}
       </Form>
     </Modal>
   )
