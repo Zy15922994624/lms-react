@@ -117,14 +117,12 @@ export default function TaskFormCard({
   const selectedType = (Form.useWatch('type', form) as TaskType | undefined) ?? 'project'
   const assignmentMode =
     (Form.useWatch('assignmentMode', form) as 'all' | 'selected' | undefined) ?? 'all'
-  const isPublished = Boolean(Form.useWatch('isPublished', form))
   const shouldPickQuestions =
     enableDraftQuestionSelection && supportsQuestionSelection(selectedType)
   const draftQuestionTotalScore = useMemo(
     () => draftQuestionRows.reduce((sum, item) => sum + item.score, 0),
     [draftQuestionRows],
   )
-  const isQuestionScoreValid = !shouldPickQuestions || draftQuestionTotalScore === 100
 
   const { data: courseStudents } = useQuery({
     queryKey: ['task-form-members', selectedCourseId],
@@ -317,6 +315,9 @@ export default function TaskFormCard({
     setUploading(true)
     try {
       const attachments = await uploadAttachments(attachmentFileList)
+      const isPublishedValue =
+        typeof values.isPublished === 'boolean' ? values.isPublished : true
+
       await onSubmit(
         {
           courseId: String(values.courseId),
@@ -335,7 +336,7 @@ export default function TaskFormCard({
             values.type === 'reading'
               ? ((values.relatedResourceIds as string[] | undefined) ?? [])
               : [],
-          isPublished: Boolean(values.isPublished),
+          isPublished: isPublishedValue,
           attachments,
         },
         shouldPickQuestions ? draftQuestionRows.map((item) => item.id) : undefined,
@@ -409,14 +410,11 @@ export default function TaskFormCard({
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
-                label="发布状态"
-                name="isPublished"
-                valuePropName="checked"
-                className="!mb-0"
-              >
+              <Form.Item label="发布状态" className="!mb-0">
                 <div className="flex h-[54px] items-center rounded-[14px] border border-[rgba(28,25,23,0.08)] px-4">
-                  <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                  <Form.Item name="isPublished" valuePropName="checked" noStyle>
+                    <Switch checkedChildren="发布" unCheckedChildren="草稿" />
+                  </Form.Item>
                 </div>
               </Form.Item>
             </div>

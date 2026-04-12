@@ -84,7 +84,7 @@ export default function LoginPage() {
           <div className="mt-5 rounded-2xl border border-[rgba(28,25,23,0.08)] bg-[#fff8f3] px-4 py-3 text-sm text-stone-600">
             <div className="font-medium text-stone-800">演示账号</div>
             <div className="mt-2 space-y-1 text-xs sm:text-sm">
-              <div>管理员：admin / Admin@123456</div>
+              {/* <div>管理员：admin / Admin@123456</div> */}
               <div>教师：teacher001 / Teacher@123456</div>
               <div>学生：student001 / Student@123456</div>
             </div>

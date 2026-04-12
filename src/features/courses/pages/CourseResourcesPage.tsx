@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Input, Modal, Pagination, Popconfirm, Select, Spin, Tag } from 'antd'
 import {
@@ -122,16 +122,18 @@ function canPreviewInline(resource: CourseResource) {
 
 export default function CourseResourcesPage() {
   const { courseId = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageResources = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
+  const focusedResourceId = searchParams.get('resourceId')?.trim() || ''
 
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedType, setSelectedType] = useState<ResourceTypeFilter>('all')
   const [sortBy, setSortBy] = useState<ResourceSortKey>('recent')
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(focusedResourceId ? 100 : 10)
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null)
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false)
   const [imageScale, setImageScale] = useState(1)
@@ -307,6 +309,19 @@ export default function CourseResourcesPage() {
     imageDragRef.current = null
     setIsImageDragging(false)
   }
+
+  useEffect(() => {
+    if (!focusedResourceId) {
+      return
+    }
+
+    setCurrentPage(1)
+    setPageSize(100)
+    setSelectedType('all')
+    setSearchInput('')
+    setSearchKeyword('')
+    setSelectedResourceId(focusedResourceId)
+  }, [focusedResourceId])
 
   useEffect(() => {
     if (!isImagePreviewOpen || selectedResource?.type !== 'image' || !imagePreviewContainerRef.current) {

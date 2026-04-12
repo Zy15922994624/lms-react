@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Pagination, Popconfirm, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -11,6 +11,7 @@ import { taskService } from '@/features/tasks/services/task.service'
 import type { GradeTaskSubmissionPayload, TaskDetail, TaskSubmission } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import { ROUTES } from '@/shared/constants/routes'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
@@ -42,6 +43,7 @@ export default function TaskDetailPage() {
   const [submissionPage, setSubmissionPage] = useState(1)
   const [submissionPageSize, setSubmissionPageSize] = useState(10)
   const [gradingTarget, setGradingTarget] = useState<TaskSubmission | null>(null)
+  const submissionPanelRef = useRef<HTMLDivElement | null>(null)
 
   const { data: task, isLoading: isTaskLoading } = useQuery({
     queryKey: ['task', id],
@@ -153,6 +155,12 @@ export default function TaskDetailPage() {
   }
 
   const submissionCountText = `${task.submittedCount}/${task.assignedStudentCount}`
+  const studentActionText =
+    submission?.status === 'graded'
+      ? '查看评分'
+      : submission?.status === 'submitted'
+        ? '查看提交'
+        : '去完成'
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -221,7 +229,19 @@ export default function TaskDetailPage() {
                   </Button>
                 </Popconfirm>
               </div>
-            ) : null}
+            ) : (
+              <Button
+                type="primary"
+                onClick={() =>
+                  submissionPanelRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  })
+                }
+              >
+                {studentActionText}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -267,15 +287,14 @@ export default function TaskDetailPage() {
                     <div className="mb-2 text-sm font-medium text-stone-900">任务附件</div>
                     <div className="space-y-2">
                       {task.attachments.map((attachment) => (
-                        <a
+                        <button
                           key={attachment.key}
-                          href={attachment.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                          type="button"
+                          onClick={() => void taskService.downloadTaskAttachment(task.id, attachment)}
+                          className="block w-full rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
                         >
                           {attachment.name || attachment.originalName}
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -286,15 +305,18 @@ export default function TaskDetailPage() {
                     <div className="mb-2 text-sm font-medium text-stone-900">关联资源</div>
                     <div className="space-y-2">
                       {task.relatedResources.map((resource) => (
-                        <a
+                        <button
                           key={resource.id}
-                          href={resource.fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                          type="button"
+                          onClick={() =>
+                            navigate(
+                              `${ROUTES.COURSE_RESOURCES(task.courseId)}?resourceId=${encodeURIComponent(resource.id)}`,
+                            )
+                          }
+                          className="block w-full rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
                         >
                           {resource.title}
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -304,7 +326,7 @@ export default function TaskDetailPage() {
           </section>
         }
       >
-        {shouldLoadQuestions ? (
+        {isTeacherView && shouldLoadQuestions ? (
           <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-stone-950">题目列表</h2>
@@ -353,21 +375,23 @@ export default function TaskDetailPage() {
             )}
           </section>
         ) : (
-          <TaskSubmissionPanel
-            key={`${submission?.updatedAt ?? 'draft'}-${taskQuestions.map((item) => item.id).join(',')}`}
-            task={task}
-            submission={submission}
-            taskQuestions={taskQuestions}
-            onSubmit={async (values) => {
-              await taskService.submitTask(id, values)
-              uiMessage.success('任务提交成功')
-              await Promise.all([
-                queryClient.invalidateQueries({ queryKey: ['task', id] }),
-                queryClient.invalidateQueries({ queryKey: ['task-submission', id] }),
-                queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-              ])
-            }}
-          />
+          <div ref={submissionPanelRef}>
+            <TaskSubmissionPanel
+              key={`${submission?.updatedAt ?? 'draft'}-${taskQuestions.map((item) => item.id).join(',')}`}
+              task={task}
+              submission={submission}
+              taskQuestions={taskQuestions}
+              onSubmit={async (values) => {
+                await taskService.submitTask(id, values)
+                uiMessage.success('任务提交成功')
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ['task', id] }),
+                  queryClient.invalidateQueries({ queryKey: ['task-submission', id] }),
+                  queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+                ])
+              }}
+            />
+          </div>
         )}
       </WorkspaceLayout>
 

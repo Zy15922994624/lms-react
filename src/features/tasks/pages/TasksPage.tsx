@@ -40,6 +40,22 @@ function getStudentTaskStatus(task: TaskItem) {
   return '未提交'
 }
 
+function isStudentTaskPending(task: TaskItem) {
+  return !task.currentUserSubmissionStatus || task.currentUserSubmissionStatus === 'not_submitted'
+}
+
+function getStudentActionLabel(task: TaskItem) {
+  if (task.currentUserSubmissionStatus === 'graded') {
+    return '查看评分'
+  }
+
+  if (task.currentUserSubmissionStatus === 'submitted') {
+    return '查看提交'
+  }
+
+  return '去完成'
+}
+
 export default function TasksPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -102,7 +118,14 @@ export default function TasksPage() {
   const focusTasks = useMemo(
     () =>
       [...tasks]
-        .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
+        .sort((left, right) => {
+          const pendingWeight = Number(isStudentTaskPending(left)) - Number(isStudentTaskPending(right))
+          if (pendingWeight !== 0) {
+            return pendingWeight > 0 ? -1 : 1
+          }
+
+          return new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime()
+        })
         .slice(0, 5),
     [tasks],
   )
@@ -192,6 +215,20 @@ export default function TasksPage() {
           <span className={getDueDateClass(value)}>{formatDateTime(value)}</span>
         ),
       },
+      {
+        title: '操作',
+        key: 'actions',
+        width: 120,
+        align: 'center' as const,
+        render: (_value, record) => (
+          <Button
+            type={isStudentTaskPending(record) ? 'primary' : 'link'}
+            onClick={() => navigate(`/tasks/${record.id}`)}
+          >
+            {getStudentActionLabel(record)}
+          </Button>
+        ),
+      },
     ],
     [navigate],
   )
@@ -272,7 +309,22 @@ export default function TasksPage() {
               ),
             },
           ]
-        : []),
+        : [
+            {
+              title: '操作',
+              key: 'actions',
+              width: 120,
+              align: 'center' as const,
+              render: (_value: unknown, record: TaskItem) => (
+                <Button
+                  type={isStudentTaskPending(record) ? 'primary' : 'link'}
+                  onClick={() => navigate(`/tasks/${record.id}`)}
+                >
+                  {getStudentActionLabel(record)}
+                </Button>
+              ),
+            },
+          ]),
     ],
     [actionItems, isTeacherView, navigate],
   )

@@ -4,6 +4,7 @@ import type {
   GradeTaskSubmissionPayload,
   PendingGradingItem,
   TaskDetail,
+  TaskFile,
   TaskFormValues,
   TaskQuestion,
   TaskQuery,
@@ -23,6 +24,23 @@ export const taskService = {
 
   async getTaskById(taskId: string) {
     return (await client.get<TaskDetail>(`/tasks/${taskId}`)) as unknown as TaskDetail
+  },
+
+  async downloadTaskAttachment(taskId: string, attachment: TaskFile) {
+    const blob = (await client.get<Blob>(`/tasks/${taskId}/attachments/download`, {
+      params: { key: attachment.key },
+      responseType: 'blob',
+    })) as unknown as Blob
+
+    const fileName = attachment.originalName || attachment.name || 'attachment.file'
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
   },
 
   async createTask(payload: TaskFormValues) {

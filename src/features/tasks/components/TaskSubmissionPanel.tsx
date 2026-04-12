@@ -140,6 +140,12 @@ export default function TaskSubmissionPanel({
 
   const canEditSubmission = submission?.status !== 'graded'
   const showQuestionSheet = supportsQuestionAnswering(task.type) && taskQuestions.length > 0
+  const isReadingTask = task.type === 'reading'
+  const contentLabel = isReadingTask ? '读后感' : '补充说明'
+  const contentPlaceholder = isReadingTask
+    ? '请结合阅读内容填写你的读后感'
+    : '补充提交说明或备注'
+  const submitButtonText = submission ? '重新提交' : isReadingTask ? '提交读后感' : '提交任务'
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -179,9 +185,13 @@ export default function TaskSubmissionPanel({
             {submission.status === 'graded' ? '已评分' : '已提交'}
           </Tag>
           <span>最近提交：{formatDateTime(submission.submittedAt)}</span>
-          <span className="font-medium text-stone-900">
-            当前得分：{submission.score ?? 0} / {submission.maxScore}
-          </span>
+          {submission.status === 'graded' ? (
+            <span className="font-medium text-stone-900">
+              当前得分：{submission.score ?? 0} / {submission.maxScore}
+            </span>
+          ) : (
+            <span className="font-medium text-stone-900">等待教师评分</span>
+          )}
         </div>
       ) : null}
 
@@ -290,12 +300,12 @@ export default function TaskSubmissionPanel({
           </div>
         ) : null}
 
-        <Form.Item className={showQuestionSheet ? 'mt-6' : undefined} label="补充说明">
+        <Form.Item className={showQuestionSheet ? 'mt-6' : undefined} label={contentLabel}>
           <Input.TextArea
             rows={5}
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="补充提交说明或备注"
+            placeholder={contentPlaceholder}
             disabled={!canEditSubmission}
           />
         </Form.Item>
@@ -339,7 +349,7 @@ export default function TaskSubmissionPanel({
             loading={submitMutation.isPending || uploading}
             disabled={!canEditSubmission}
           >
-            {submission ? '重新提交' : '提交任务'}
+            {submitButtonText}
           </Button>
         </div>
       </Form>
