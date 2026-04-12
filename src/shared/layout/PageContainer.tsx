@@ -13,11 +13,7 @@ export default function PageContainer({
 }: PageContainerProps) {
   return (
     <div
-      className={[
-        'app-content-container',
-        `app-content-container--${mode}`,
-        className,
-      ]
+      className={['app-content-container', `app-content-container--${mode}`, className]
         .filter(Boolean)
         .join(' ')}
     >

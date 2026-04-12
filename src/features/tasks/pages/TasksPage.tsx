@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Dropdown, Empty, Input, Modal, Select, Table, Tag } from 'antd'
+import { Button, Dropdown, Empty, Input, Modal, Pagination, Select, Table, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
@@ -11,6 +11,7 @@ import { taskService } from '@/features/tasks/services/task.service'
 import type { PendingGradingItem, TaskItem, TaskType } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
@@ -61,6 +62,7 @@ export default function TasksPage() {
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.currentUser)
   const isTeacherView = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
+  const { isMobile } = useResponsiveLayout()
 
   const [searchText, setSearchText] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -119,7 +121,8 @@ export default function TasksPage() {
     () =>
       [...tasks]
         .sort((left, right) => {
-          const pendingWeight = Number(isStudentTaskPending(left)) - Number(isStudentTaskPending(right))
+          const pendingWeight =
+            Number(isStudentTaskPending(left)) - Number(isStudentTaskPending(right))
           if (pendingWeight !== 0) {
             return pendingWeight > 0 ? -1 : 1
           }
@@ -338,6 +341,11 @@ export default function TasksPage() {
     setPageSize(pagination.pageSize ?? 10)
   }
 
+  const handlePageChange = (nextPage: number, nextPageSize: number) => {
+    setPage(nextPage)
+    setPageSize(nextPageSize)
+  }
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <WorkspaceLayout
@@ -352,6 +360,27 @@ export default function TasksPage() {
               {pendingGradingItems.length === 0 ? (
                 <div className="mt-4">
                   <Empty description="暂无待批改提交" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                </div>
+              ) : isMobile ? (
+                <div className="mt-4 space-y-2">
+                  {pendingGradingItems.map((item) => (
+                    <article
+                      key={item.submissionId}
+                      className="rounded-[14px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                    >
+                      <button
+                        type="button"
+                        className="text-left text-sm font-medium text-stone-900"
+                        onClick={() => navigate(`/tasks/${item.taskId}`)}
+                      >
+                        {item.taskTitle}
+                      </button>
+                      <div className="mt-1 text-xs text-stone-500">{item.studentName}</div>
+                      <div className="mt-1 text-xs text-stone-400">
+                        {formatDateTime(item.submittedAt)}
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <Table<PendingGradingItem>
@@ -373,6 +402,35 @@ export default function TasksPage() {
               {focusTasks.length === 0 ? (
                 <div className="mt-4">
                   <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                </div>
+              ) : isMobile ? (
+                <div className="mt-4 space-y-2">
+                  {focusTasks.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-[14px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                    >
+                      <button
+                        type="button"
+                        className="text-left text-sm font-medium text-stone-900"
+                        onClick={() => navigate(`/tasks/${item.id}`)}
+                      >
+                        {item.title}
+                      </button>
+                      <div className="mt-1 text-xs text-stone-400">
+                        {formatDateTime(item.dueDate)}
+                      </div>
+                      <div className="mt-2">
+                        <Button
+                          size="small"
+                          type={isStudentTaskPending(item) ? 'primary' : 'default'}
+                          onClick={() => navigate(`/tasks/${item.id}`)}
+                        >
+                          {getStudentActionLabel(item)}
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               ) : (
                 <Table<TaskItem>
@@ -453,22 +511,90 @@ export default function TasksPage() {
             <div className="mb-4 text-right text-sm text-stone-400">正在刷新…</div>
           ) : null}
 
-          <Table<TaskItem>
-            size="middle"
-            rowKey="id"
-            dataSource={tasks}
-            columns={taskColumns}
-            loading={isFetching && Boolean(taskPage)}
-            locale={{ emptyText: '暂无任务' }}
-            scroll={{ x: 980 }}
-            pagination={{
-              current: page,
-              pageSize,
-              total,
-              showSizeChanger: true,
-            }}
-            onChange={handleTaskTableChange}
-          />
+          {isMobile ? (
+            tasks.length ? (
+              <div className="space-y-3">
+                {tasks.map((task) => (
+                  <article
+                    key={task.id}
+                    className="rounded-[16px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Tag color={taskTypeColorMap[task.type]}>{taskTypeLabelMap[task.type]}</Tag>
+                      {isTeacherView && !task.isPublished ? <Tag>未发布</Tag> : null}
+                      {!isTeacherView && task.currentUserSubmissionStatus === 'graded' ? (
+                        <Tag color="green">已评分</Tag>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      className="text-left text-sm font-medium leading-6 text-stone-900"
+                      onClick={() => navigate(`/tasks/${task.id}`)}
+                    >
+                      {task.title}
+                    </button>
+                    <div className="mt-1 text-xs text-stone-500">{task.course?.title || '-'}</div>
+                    <div className="mt-2 text-xs">
+                      <span className={getDueDateClass(task.dueDate)}>
+                        {formatDateTime(task.dueDate)}
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-stone-500">
+                      {isTeacherView
+                        ? `${task.submittedCount}/${task.assignedStudentCount}`
+                        : getStudentTaskStatus(task)}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      {isTeacherView ? (
+                        <Button size="small" onClick={() => navigate(`/tasks/${task.id}`)}>
+                          查看详情
+                        </Button>
+                      ) : (
+                        <Button
+                          size="small"
+                          type={isStudentTaskPending(task) ? 'primary' : 'default'}
+                          onClick={() => navigate(`/tasks/${task.id}`)}
+                        >
+                          {getStudentActionLabel(task)}
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )
+          ) : (
+            <Table<TaskItem>
+              size="middle"
+              rowKey="id"
+              dataSource={tasks}
+              columns={taskColumns}
+              loading={isFetching && Boolean(taskPage)}
+              locale={{ emptyText: '暂无任务' }}
+              scroll={{ x: 980 }}
+              pagination={{
+                current: page,
+                pageSize,
+                total,
+                showSizeChanger: true,
+              }}
+              onChange={handleTaskTableChange}
+            />
+          )}
+          {isMobile && total > 0 ? (
+            <div className="mt-5 flex justify-center">
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={total}
+                size="small"
+                showSizeChanger={false}
+                onChange={handlePageChange}
+              />
+            </div>
+          ) : null}
         </section>
       </WorkspaceLayout>
 

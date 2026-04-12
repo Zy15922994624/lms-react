@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Form, Input, Modal, Select } from 'antd'
 import type { UserRole } from '@/shared/types/user'
 import type { UserFormValues, UserManagementItem } from '@/features/users/types/user-management'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
 interface UserFormModalProps {
   open: boolean
@@ -26,6 +27,7 @@ export default function UserFormModal({
   onSubmit,
 }: UserFormModalProps) {
   const [form] = Form.useForm<UserFormValues>()
+  const { isMobile } = useResponsiveLayout()
   const isEditMode = Boolean(user)
   const isEditingCurrentUser = Boolean(user?.id && currentUserId && user.id === currentUserId)
 
@@ -74,6 +76,7 @@ export default function UserFormModal({
       cancelText="取消"
       confirmLoading={loading}
       destroyOnHidden
+      width={isMobile ? 'calc(100vw - 20px)' : undefined}
     >
       <Form<UserFormValues> form={form} layout="vertical" onFinish={handleFinish}>
         <div className="grid gap-4 sm:grid-cols-2">

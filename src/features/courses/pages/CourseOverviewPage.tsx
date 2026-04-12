@@ -12,12 +12,14 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { ROUTES } from '@/shared/constants/routes'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 
 export default function CourseOverviewPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { isMobile } = useResponsiveLayout()
   const { courseId = '' } = useParams()
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageCourse = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
@@ -175,6 +177,7 @@ export default function CourseOverviewPage() {
       <Modal
         open={isDeleteConfirmOpen}
         title="删除课程"
+        width={isMobile ? 'calc(100vw - 20px)' : undefined}
         okText="删除"
         cancelText="取消"
         okButtonProps={{ danger: true, loading: deleteCourseMutation.isPending }}

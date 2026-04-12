@@ -6,6 +6,7 @@ import type {
   TaskQuestion,
   TaskSubmission,
 } from '@/features/tasks/types/task'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import { formatDateTime } from '@/shared/utils/date'
 
 interface TaskGradingModalProps {
@@ -99,6 +100,7 @@ export default function TaskGradingModal({
   onSubmit,
 }: TaskGradingModalProps) {
   const [form] = Form.useForm()
+  const { isMobile } = useResponsiveLayout()
   const watchedAnswers = Form.useWatch('answers', form) as GradeFormAnswer[] | undefined
   const isQuestionTask = supportsQuestionGrading(task.type) && taskQuestions.length > 0
 
@@ -113,7 +115,7 @@ export default function TaskGradingModal({
       title={submission ? `评分：${submission.user?.fullName || submission.user?.username || '学生'}` : '评分'}
       okText="保存评分"
       cancelText="取消"
-      width={920}
+      width={isMobile ? 'calc(100vw - 20px)' : 920}
       okButtonProps={{ loading }}
       afterOpenChange={(visible) => {
         if (visible && submission) {

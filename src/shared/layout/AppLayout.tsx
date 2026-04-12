@@ -72,7 +72,12 @@ export default function AppLayout() {
   const { currentUser, userRole, hasRole, logout } = useAuthStore()
 
   const role = userRole()
-  const isDesktop = Boolean(screens.lg)
+  const isTabletNav = Boolean(screens.md) && !Boolean(screens.lg)
+  const isDesktopNav = Boolean(screens.lg)
+  const hasPersistentNav = isTabletNav || isDesktopNav
+  const showCompactNav = isTabletNav
+  const siderWidth = screens.xxl ? 300 : screens.xl ? 280 : isDesktopNav ? 248 : 96
+  const mobileDrawerWidth = screens.sm ? 320 : 288
   const selectedKey = resolveSelectedKey(location.pathname)
   const contentWidthMode = resolvePageWidthMode(location.pathname)
 
@@ -119,12 +124,17 @@ export default function AppLayout() {
 
   const menuNode = (
     <div className="flex h-full flex-col bg-[linear-gradient(180deg,#fffaf7_0%,#fffdfb_100%)]">
-      <div className="flex h-[var(--lms-layout-header-height)] items-center border-b border-[var(--lms-color-border)] px-5">
-        <div className="flex items-center gap-3">
+      <div
+        className={[
+          'flex h-[var(--lms-layout-header-height)] items-center border-b border-[var(--lms-color-border)]',
+          showCompactNav ? 'justify-center px-3' : 'px-5',
+        ].join(' ')}
+      >
+        <div className={['flex items-center', showCompactNav ? '' : 'gap-3'].join(' ')}>
           <div className="flex h-11 w-11 items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#ff6b35_0%,#ff9a3c_100%)] text-xl font-bold text-white shadow-[0_10px_24px_rgba(255,107,53,0.24)]">
             L
           </div>
-          <div className="min-w-0">
+          <div className={showCompactNav ? 'hidden' : 'min-w-0'}>
             <Typography.Text strong className="block text-[15px] text-stone-900">
               学习任务系统
             </Typography.Text>
@@ -132,10 +142,15 @@ export default function AppLayout() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+      <div
+        className={['min-h-0 flex-1 overflow-y-auto py-5', showCompactNav ? 'px-2' : 'px-3'].join(
+          ' ',
+        )}
+      >
         <Menu
           mode="inline"
           theme="light"
+          inlineCollapsed={showCompactNav}
           selectedKeys={selectedKey ? [selectedKey] : []}
           onClick={handleMenuClick}
           style={{ border: 'none', background: 'transparent' }}
@@ -143,7 +158,7 @@ export default function AppLayout() {
         />
       </div>
 
-      <div className="px-4 pb-4">
+      <div className={showCompactNav ? 'hidden px-4 pb-4' : 'px-4 pb-4'}>
         <div className="rounded-[24px] border border-[rgba(255,107,53,0.12)] bg-white/92 px-4 py-4 shadow-[0_16px_36px_rgba(28,25,23,0.05)]">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
             <span className="app-status-dot" />
@@ -162,19 +177,19 @@ export default function AppLayout() {
 
   return (
     <Layout className="app-shell">
-      {isDesktop ? (
+      {hasPersistentNav ? (
         <Sider
-          width={280}
+          width={siderWidth}
           theme="light"
           style={{
             height: '100vh',
             background: 'transparent',
             borderRight: '1px solid var(--lms-color-border)',
             overflow: 'hidden',
-            flex: '0 0 280px',
-            maxWidth: 280,
-            minWidth: 280,
-            width: 280,
+            flex: `0 0 ${siderWidth}px`,
+            maxWidth: siderWidth,
+            minWidth: siderWidth,
+            width: siderWidth,
           }}
         >
           {menuNode}
@@ -182,7 +197,7 @@ export default function AppLayout() {
       ) : (
         <Drawer
           placement="left"
-          size="default"
+          size={mobileDrawerWidth}
           open={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           closable={false}
@@ -204,7 +219,7 @@ export default function AppLayout() {
         >
           <div className="flex h-full w-full items-center justify-between gap-4 px-4 sm:px-6">
             <div className="flex items-center gap-3">
-              {!isDesktop ? (
+              {!hasPersistentNav ? (
                 <button
                   type="button"
                   className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--lms-color-border)] bg-white text-stone-700 shadow-[0_10px_24px_rgba(28,25,23,0.06)]"

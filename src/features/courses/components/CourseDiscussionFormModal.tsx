@@ -3,6 +3,7 @@ import type {
   CourseDiscussionFormValues,
   CreateCourseDiscussionPayload,
 } from '@/features/courses/types/course-discussion'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
 interface CourseDiscussionFormModalProps {
   open: boolean
@@ -18,6 +19,7 @@ export default function CourseDiscussionFormModal({
   onSubmit,
 }: CourseDiscussionFormModalProps) {
   const [form] = Form.useForm<CourseDiscussionFormValues>()
+  const { isMobile } = useResponsiveLayout()
 
   return (
     <Modal
@@ -29,6 +31,7 @@ export default function CourseDiscussionFormModal({
       onCancel={onCancel}
       onOk={() => form.submit()}
       destroyOnHidden
+      width={isMobile ? 'calc(100vw - 20px)' : undefined}
       afterOpenChange={(visible) => {
         if (!visible) {
           form.resetFields()

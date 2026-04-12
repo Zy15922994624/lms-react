@@ -16,6 +16,7 @@ import type {
   QuestionBankOption,
   QuestionType,
 } from '@/features/question-bank/types/question-bank'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
 interface QuestionBankFormModalProps {
   open: boolean
@@ -97,6 +98,7 @@ export default function QuestionBankFormModal({
   onSubmit,
 }: QuestionBankFormModalProps) {
   const [form] = Form.useForm<QuestionBankFormState>()
+  const { isMobile } = useResponsiveLayout()
   const questionType = Form.useWatch('type', form) ?? 'single_choice'
   const watchedOptions = Form.useWatch('options', form)
 
@@ -142,7 +144,7 @@ export default function QuestionBankFormModal({
     <Modal
       open={open}
       title={question ? '编辑题目' : '新增题目'}
-      width={820}
+      width={isMobile ? 'calc(100vw - 20px)' : 820}
       okText={question ? '保存修改' : '创建题目'}
       cancelText="取消"
       confirmLoading={submitting}

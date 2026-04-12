@@ -9,6 +9,7 @@ import type { UserFormValues, UserManagementItem } from '@/features/users/types/
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -27,6 +28,7 @@ const roleColorMap = {
 export default function UsersPage() {
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.currentUser)
+  const { isMobile } = useResponsiveLayout()
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'teacher' | 'student'>('all')
@@ -265,7 +267,69 @@ export default function UsersPage() {
             <div className="mb-4 text-right text-sm text-stone-400">正在刷新…</div>
           ) : null}
 
-          <Table<UserManagementItem>
+          {isMobile ? (
+            users.length ? (
+              <div className="space-y-3">
+                {users.map((record) => {
+                  const isCurrentUser = record.id === currentUser?.id
+                  const canDelete = !isCurrentUser && record.role !== 'admin'
+                  return (
+                    <article
+                      key={record.id}
+                      className="rounded-[16px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-base font-semibold text-stone-950">{record.username}</div>
+                          <div className="mt-1 truncate text-sm text-stone-500">
+                            {record.fullName || '未填写姓名'}
+                          </div>
+                        </div>
+                        <Tag color={roleColorMap[record.role]}>{roleLabelMap[record.role]}</Tag>
+                      </div>
+                      <div className="mt-2 text-sm text-stone-600 break-all">{record.email}</div>
+                      <div className="mt-1 text-xs text-stone-400">
+                        {record.createdAt ? formatDateTime(record.createdAt) : '-'}
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Button
+                          type="link"
+                          size="small"
+                          className="px-0"
+                          onClick={() => {
+                            setEditingUser(record)
+                            setIsModalOpen(true)
+                          }}
+                        >
+                          编辑
+                        </Button>
+                        <Popconfirm
+                          title="确定删除这个账号吗？"
+                          okText="删除"
+                          cancelText="取消"
+                          onConfirm={() => deleteMutation.mutate(record.id)}
+                          disabled={!canDelete}
+                        >
+                          <Button
+                            type="link"
+                            size="small"
+                            danger
+                            disabled={!canDelete}
+                            loading={deleteMutation.isPending}
+                          >
+                            删除
+                          </Button>
+                        </Popconfirm>
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            ) : (
+              <Empty description="暂无用户" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )
+          ) : (
+            <Table<UserManagementItem>
             rowKey="id"
             dataSource={users}
             columns={columns}
@@ -274,14 +338,16 @@ export default function UsersPage() {
               emptyText: <Empty description="暂无用户" image={Empty.PRESENTED_IMAGE_SIMPLE} />,
             }}
           />
+          )}
 
           {total > 0 ? (
-            <div className="mt-8 flex justify-end">
+            <div className={['mt-8 flex', isMobile ? 'justify-center' : 'justify-end'].join(' ')}>
               <Pagination
                 current={currentPage}
                 pageSize={pageSize}
                 total={total}
-                showSizeChanger
+                size={isMobile ? 'small' : undefined}
+                showSizeChanger={!isMobile}
                 pageSizeOptions={[10, 20, 50]}
                 onChange={(page, nextPageSize) => {
                   setCurrentPage(page)

@@ -25,6 +25,7 @@ import type {
 } from '@/features/question-bank/types/question-bank'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -72,6 +73,7 @@ function mapFormValuesToPayload(values: QuestionBankFormValues) {
 
 export default function QuestionBankPage() {
   const queryClient = useQueryClient()
+  const { isMobile } = useResponsiveLayout()
 
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -343,20 +345,38 @@ export default function QuestionBankPage() {
           </div>
 
           <div className="mt-4">
-            <Segmented
-              value={selectedType}
-              onChange={(value) => {
-                setCurrentPage(1)
-                setSelectedType(value as QuestionType | 'all')
-              }}
-              options={[
-                { label: '全部', value: 'all' },
-                { label: '单选题', value: 'single_choice' },
-                { label: '多选题', value: 'multi_choice' },
-                { label: '填空题', value: 'fill_text' },
-                { label: '简答题', value: 'rich_text' },
-              ]}
-            />
+            {isMobile ? (
+              <Select
+                value={selectedType}
+                onChange={(value) => {
+                  setCurrentPage(1)
+                  setSelectedType(value as QuestionType | 'all')
+                }}
+                className="w-full"
+                options={[
+                  { label: '全部题型', value: 'all' },
+                  { label: '单选题', value: 'single_choice' },
+                  { label: '多选题', value: 'multi_choice' },
+                  { label: '填空题', value: 'fill_text' },
+                  { label: '简答题', value: 'rich_text' },
+                ]}
+              />
+            ) : (
+              <Segmented
+                value={selectedType}
+                onChange={(value) => {
+                  setCurrentPage(1)
+                  setSelectedType(value as QuestionType | 'all')
+                }}
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '单选题', value: 'single_choice' },
+                  { label: '多选题', value: 'multi_choice' },
+                  { label: '填空题', value: 'fill_text' },
+                  { label: '简答题', value: 'rich_text' },
+                ]}
+              />
+            )}
           </div>
         </div>
 
@@ -367,21 +387,70 @@ export default function QuestionBankPage() {
             </div>
           ) : null}
 
-          <Table<QuestionBankItem>
-            rowKey="id"
-            dataSource={questions}
-            columns={questionColumns}
-            pagination={false}
-            size="middle"
-          />
+          {isMobile ? (
+            questions.length ? (
+              <div className="space-y-3">
+                {questions.map((question) => (
+                  <article
+                    key={question.id}
+                    className="rounded-[16px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="line-clamp-2 text-base font-semibold text-stone-950">
+                          {question.title}
+                        </div>
+                        <div className="mt-1 text-xs text-stone-500">
+                          {question.course?.title || '—'}
+                        </div>
+                      </div>
+                      <Tag color={questionTypeColorMap[question.type]}>
+                        {questionTypeTextMap[question.type]}
+                      </Tag>
+                    </div>
+                    <div className="mt-2 flex items-center gap-3 text-sm text-stone-600">
+                      <span>分值 {question.score}</span>
+                      <span>{formatDateTime(question.updatedAt)}</span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Button type="link" size="small" className="px-0" onClick={() => openEditModal(question)}>
+                        编辑
+                      </Button>
+                      <Popconfirm
+                        title="确定删除这道题目吗？"
+                        okText="删除"
+                        cancelText="取消"
+                        onConfirm={() => deleteMutation.mutate(question.id)}
+                      >
+                        <Button type="link" size="small" danger loading={deleteMutation.isPending}>
+                          删除
+                        </Button>
+                      </Popconfirm>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-stone-400">暂无题目</div>
+            )
+          ) : (
+            <Table<QuestionBankItem>
+              rowKey="id"
+              dataSource={questions}
+              columns={questionColumns}
+              pagination={false}
+              size="middle"
+            />
+          )}
 
           {total > 0 ? (
-            <div className="mt-8 flex justify-end">
+            <div className={['mt-8 flex', isMobile ? 'justify-center' : 'justify-end'].join(' ')}>
               <Pagination
                 current={currentPage}
                 pageSize={pageSize}
                 total={total}
-                showSizeChanger
+                size={isMobile ? 'small' : undefined}
+                showSizeChanger={!isMobile}
                 pageSizeOptions={[10, 20, 50]}
                 onChange={(page, nextPageSize) => {
                   setCurrentPage(page)

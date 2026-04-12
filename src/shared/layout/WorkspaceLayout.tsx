@@ -12,11 +12,11 @@ interface WorkspaceLayoutProps extends PropsWithChildren {
 
 const presetClassMap: Record<WorkspaceLayoutPreset, string> = {
   dashboard:
-    'grid gap-6 2xl:gap-8 xl:grid-cols-[minmax(0,1.65fr)_340px] 2xl:grid-cols-[minmax(0,1.82fr)_380px]',
+    'grid gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.45fr)_280px] xl:gap-7 xl:grid-cols-[minmax(0,1.65fr)_340px] 2xl:gap-8 2xl:grid-cols-[minmax(0,1.82fr)_380px]',
   course:
-    'grid gap-6 2xl:gap-10 xl:grid-cols-[minmax(0,1.8fr)_380px] 2xl:grid-cols-[minmax(0,2.05fr)_460px]',
+    'grid gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.55fr)_320px] xl:gap-8 xl:grid-cols-[minmax(0,1.8fr)_380px] 2xl:gap-10 2xl:grid-cols-[minmax(0,2.05fr)_460px]',
   resource:
-    'grid gap-6 2xl:gap-8 xl:grid-cols-[minmax(0,1.16fr)_400px] 2xl:grid-cols-[minmax(0,1.24fr)_440px]',
+    'grid gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.04fr)_320px] xl:gap-7 xl:grid-cols-[minmax(0,1.16fr)_400px] 2xl:gap-8 2xl:grid-cols-[minmax(0,1.24fr)_440px]',
 }
 
 function joinClassNames(...values: Array<string | undefined | false | null>) {
@@ -35,7 +35,12 @@ export default function WorkspaceLayout({
     <section className={joinClassNames(aside ? presetClassMap[preset] : undefined, className)}>
       <div className={joinClassNames(mainClassName)}>{children}</div>
       {aside ? (
-        <aside className={joinClassNames('xl:sticky xl:top-6 xl:self-start 2xl:top-8', asideClassName)}>
+        <aside
+          className={joinClassNames(
+            'lg:sticky lg:top-5 lg:self-start xl:top-6 2xl:top-8',
+            asideClassName,
+          )}
+        >
           {aside}
         </aside>
       ) : null}

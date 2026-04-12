@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Empty, Popconfirm, Select, Table, Tag } from 'antd'
+import { Button, Empty, Pagination, Popconfirm, Select, Table, Tag } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -16,6 +16,7 @@ import {
 } from '@/features/notifications/utils/notification'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -28,6 +29,7 @@ export default function NotificationsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [typeFilter, setTypeFilter] = useState<NotificationType | undefined>()
   const [readFilter, setReadFilter] = useState<ReadFilter>('all')
+  const { isMobile } = useResponsiveLayout()
 
   const { data: unreadData } = useQuery({
     queryKey: ['notifications', 'unread-count'],
@@ -166,6 +168,11 @@ export default function NotificationsPage() {
     setPageSize(pagination.pageSize ?? 10)
   }
 
+  const handlePageChange = (nextPage: number, nextPageSize: number) => {
+    setPage(nextPage)
+    setPageSize(nextPageSize)
+  }
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <WorkspaceLayout
@@ -250,7 +257,76 @@ export default function NotificationsPage() {
         </div>
 
         <div className="px-6 py-5 sm:px-8 xl:px-9 xl:py-6 2xl:px-10">
-          <Table<NotificationItem>
+          {isMobile ? (
+            <>
+              {notifications.length ? (
+                <div className="space-y-3">
+                  {notifications.map((record) => (
+                    <article
+                      key={record.id}
+                      className="rounded-[16px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                    >
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Tag color={getNotificationTypeColor(record.type)}>
+                          {getNotificationTypeLabel(record.type)}
+                        </Tag>
+                        {record.isRead ? <Tag>已读</Tag> : <Tag color="orange">未读</Tag>}
+                      </div>
+                      <button
+                        type="button"
+                        className="text-left text-sm font-medium leading-6 text-stone-900"
+                        onClick={() => void handleOpenNotification(record)}
+                      >
+                        {record.title}
+                      </button>
+                      <div className="mt-1 text-sm leading-6 text-stone-500">{record.content}</div>
+                      <div className="mt-2 text-xs text-stone-400">{formatDateTime(record.createdAt)}</div>
+                      <div className="mt-3 flex items-center gap-2">
+                        {!record.isRead ? (
+                          <Button
+                            type="link"
+                            className="px-0"
+                            loading={markAsReadMutation.isPending}
+                            onClick={() => markAsReadMutation.mutate(record.id)}
+                          >
+                            标记已读
+                          </Button>
+                        ) : null}
+                        <Popconfirm
+                          title="确定删除这条通知吗？"
+                          okText="删除"
+                          cancelText="取消"
+                          onConfirm={() => deleteMutation.mutate(record.id)}
+                        >
+                          <Button
+                            type="text"
+                            shape="circle"
+                            icon={<DeleteOutlined />}
+                            className="text-stone-400 hover:text-stone-900"
+                          />
+                        </Popconfirm>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <Empty description="暂无通知" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              )}
+              {(data?.total ?? 0) > 0 ? (
+                <div className="mt-5 flex justify-center">
+                  <Pagination
+                    current={page}
+                    pageSize={pageSize}
+                    total={data?.total ?? 0}
+                    size="small"
+                    showSizeChanger={false}
+                    onChange={handlePageChange}
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <Table<NotificationItem>
             rowKey="id"
             loading={isFetching}
             dataSource={notifications}
@@ -267,6 +343,7 @@ export default function NotificationsPage() {
             onChange={handleTableChange}
             scroll={{ x: 720 }}
           />
+          )}
         </div>
       </WorkspaceLayout>
     </div>

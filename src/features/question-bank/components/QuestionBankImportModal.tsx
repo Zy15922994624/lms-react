@@ -6,6 +6,7 @@ import type { CourseSummary } from '@/features/courses/types/course'
 import { questionBankService } from '@/features/question-bank/services/question-bank.service'
 import type { QuestionBankImportResult } from '@/features/question-bank/types/question-bank'
 import { uiMessage } from '@/shared/components/feedback/message'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
 const { Dragger } = Upload
 
@@ -32,6 +33,7 @@ export default function QuestionBankImportModal({
   onCancel,
   onSuccess,
 }: QuestionBankImportModalProps) {
+  const { isMobile } = useResponsiveLayout()
   const [courseId, setCourseId] = useState<string>()
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -148,7 +150,7 @@ export default function QuestionBankImportModal({
     <Modal
       open={open}
       title="导入题目"
-      width={680}
+      width={isMobile ? 'calc(100vw - 20px)' : 680}
       okText="开始导入"
       cancelText="取消"
       confirmLoading={importing || submitting}

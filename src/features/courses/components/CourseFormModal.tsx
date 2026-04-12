@@ -3,6 +3,7 @@ import { UploadOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import { Button, Form, Input, InputNumber, Modal, Upload } from 'antd'
 import type { CourseDetail, CourseFormValues } from '@/features/courses/types/course'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import { useDeferredUpload } from '@/shared/hooks/useDeferredUpload'
 
 interface CourseFormModalProps {
@@ -23,6 +24,7 @@ export default function CourseFormModal({
   onSubmit,
 }: CourseFormModalProps) {
   const [form] = Form.useForm<CourseFormValues>()
+  const { isMobile } = useResponsiveLayout()
   const remoteCoverPreview = Form.useWatch('coverImage', form)
   const {
     selectedFile: selectedCoverFile,
@@ -95,6 +97,7 @@ export default function CourseFormModal({
       cancelText="取消"
       confirmLoading={loading || uploading}
       destroyOnHidden
+      width={isMobile ? 'calc(100vw - 20px)' : undefined}
     >
       <Form form={form} layout="vertical" onFinish={handleFinish}>
         <Form.Item

@@ -191,6 +191,23 @@ img {
   }
 }
 
+@media (min-width: 1024px) {
+  .app-content-scroll {
+    padding: max(20px, var(--lms-layout-page-padding-block))
+      max(20px, var(--lms-layout-page-padding-inline));
+  }
+
+  .app-content-container--workspace {
+    --lms-layout-current-width: 1880px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .app-content-container--workspace {
+    --lms-layout-current-width: var(--lms-layout-content-width-workspace);
+  }
+}
+
 @media (min-width: 1920px) {
   .app-content-container--workspace {
     --lms-layout-current-width: var(--lms-layout-content-width-workspace-wide);

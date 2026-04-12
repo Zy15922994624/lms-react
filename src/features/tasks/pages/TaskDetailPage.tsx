@@ -13,6 +13,7 @@ import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import { ROUTES } from '@/shared/constants/routes'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
 function supportsQuestionPreview(taskType: TaskDetail['type']) {
@@ -39,6 +40,7 @@ export default function TaskDetailPage() {
   const { id = '' } = useParams()
   const currentUser = useAuthStore((state) => state.currentUser)
   const isTeacherView = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
+  const { isMobile } = useResponsiveLayout()
 
   const [submissionPage, setSubmissionPage] = useState(1)
   const [submissionPageSize, setSubmissionPageSize] = useState(10)
@@ -105,18 +107,21 @@ export default function TaskDetailPage() {
         title: '学生',
         dataIndex: 'user',
         key: 'user',
+        width: 140,
         render: (_value, record) => record.user?.fullName || record.user?.username || '未命名学生',
       },
       {
         title: '提交时间',
         dataIndex: 'submittedAt',
         key: 'submittedAt',
+        width: 180,
         render: (value: string) => formatDateTime(value),
       },
       {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
+        width: 100,
         render: (value: TaskSubmission['status']) => (
           <Tag color={value === 'graded' ? 'green' : 'orange'}>
             {value === 'graded' ? '已评分' : '待评分'}
@@ -127,12 +132,14 @@ export default function TaskDetailPage() {
         title: '得分',
         dataIndex: 'score',
         key: 'score',
+        width: 110,
         render: (_value, record) =>
           record.score !== undefined ? `${record.score}/${record.maxScore}` : '-',
       },
       {
         title: '操作',
         key: 'actions',
+        width: 120,
         render: (_value, record) => (
           <Button type="link" onClick={() => setGradingTarget(record)}>
             {record.status === 'graded' ? '查看评分' : '去评分'}
@@ -271,7 +278,7 @@ export default function TaskDetailPage() {
         preset="course"
         mainClassName="w-full space-y-5"
         aside={
-          <section className="app-panel px-5 py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
+          <section className="app-panel px-4 py-4 sm:px-5 sm:py-5 xl:px-6 xl:py-6 2xl:px-7 2xl:py-7">
             <div className="app-section-heading">
               <h2 className="app-section-title">附件与资源</h2>
             </div>
@@ -291,7 +298,7 @@ export default function TaskDetailPage() {
                           key={attachment.key}
                           type="button"
                           onClick={() => void taskService.downloadTaskAttachment(task.id, attachment)}
-                          className="block w-full rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                          className="block w-full break-all rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
                         >
                           {attachment.name || attachment.originalName}
                         </button>
@@ -313,7 +320,7 @@ export default function TaskDetailPage() {
                               `${ROUTES.COURSE_RESOURCES(task.courseId)}?resourceId=${encodeURIComponent(resource.id)}`,
                             )
                           }
-                          className="block w-full rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
+                          className="block w-full break-all rounded-[16px] border border-[rgba(28,25,23,0.06)] px-4 py-3 text-left text-sm text-stone-700 transition hover:border-[rgba(255,107,53,0.18)] hover:text-orange-600"
                         >
                           {resource.title}
                         </button>
@@ -327,7 +334,7 @@ export default function TaskDetailPage() {
         }
       >
         {isTeacherView && shouldLoadQuestions ? (
-          <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
+          <section className="app-panel px-4 py-4 sm:px-6 xl:px-7">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-stone-950">题目列表</h2>
               <span className="text-sm text-stone-400">{taskQuestions.length} 题</span>
@@ -342,7 +349,7 @@ export default function TaskDetailPage() {
         ) : null}
 
         {isTeacherView ? (
-          <section className="app-panel px-5 py-5 sm:px-6 xl:px-7">
+          <section className="app-panel px-4 py-4 sm:px-6 xl:px-7">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-stone-950">提交记录</h2>
               <span className="text-sm text-stone-400">{submissionsPage?.total ?? 0} 条</span>
@@ -350,19 +357,56 @@ export default function TaskDetailPage() {
 
             {submissionsPage && submissionsPage.items.length > 0 ? (
               <>
-                <Table<TaskSubmission>
-                  rowKey="id"
-                  dataSource={submissionsPage.items}
-                  columns={teacherSubmissionColumns}
-                  pagination={false}
-                  scroll={{ x: 720 }}
-                />
-                <div className="mt-5 flex justify-end">
+                {isMobile ? (
+                  <div className="space-y-3">
+                    {submissionsPage.items.map((record) => (
+                      <article
+                        key={record.id}
+                        className="rounded-[14px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-stone-900">
+                              {record.user?.fullName || record.user?.username || '未命名学生'}
+                            </div>
+                            <div className="mt-1 text-xs text-stone-500">
+                              {formatDateTime(record.submittedAt)}
+                            </div>
+                          </div>
+                          <Tag color={record.status === 'graded' ? 'green' : 'orange'}>
+                            {record.status === 'graded' ? '已评分' : '待评分'}
+                          </Tag>
+                        </div>
+                        <div className="mt-2 text-sm text-stone-600">
+                          得分：
+                          <span className="font-medium text-stone-900">
+                            {record.score !== undefined ? `${record.score}/${record.maxScore}` : '-'}
+                          </span>
+                        </div>
+                        <div className="mt-2">
+                          <Button type="link" className="px-0" onClick={() => setGradingTarget(record)}>
+                            {record.status === 'graded' ? '查看评分' : '去评分'}
+                          </Button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <Table<TaskSubmission>
+                    rowKey="id"
+                    dataSource={submissionsPage.items}
+                    columns={teacherSubmissionColumns}
+                    pagination={false}
+                    scroll={{ x: 760 }}
+                  />
+                )}
+                <div className={['mt-5 flex', isMobile ? 'justify-center' : 'justify-end'].join(' ')}>
                   <Pagination
                     current={submissionPage}
                     pageSize={submissionPageSize}
                     total={submissionsPage.total}
-                    showSizeChanger
+                    size={isMobile ? 'small' : undefined}
+                    showSizeChanger={!isMobile}
                     onChange={(nextPage, nextPageSize) => {
                       setSubmissionPage(nextPage)
                       setSubmissionPageSize(nextPageSize)

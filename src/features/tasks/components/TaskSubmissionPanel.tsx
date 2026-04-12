@@ -341,7 +341,7 @@ export default function TaskSubmissionPanel({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between text-sm text-stone-400">
+        <div className="flex flex-col gap-3 text-sm text-stone-400 sm:flex-row sm:items-center sm:justify-between">
           <span>截止日期：{formatDate(task.dueDate)}</span>
           <Button
             type="primary"

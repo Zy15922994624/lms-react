@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Button, Empty, Popconfirm, Space, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { TaskQuestion, TaskQuestionType } from '@/features/tasks/types/task'
+import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
 interface TaskQuestionListProps {
   questions?: TaskQuestion[]
@@ -54,6 +55,7 @@ export default function TaskQuestionList({
   onDelete,
   actionLoadingId = null,
 }: TaskQuestionListProps) {
+  const { isMobile } = useResponsiveLayout()
   const columns = useMemo<ColumnsType<TaskQuestion>>(
     () => [
       {
@@ -183,6 +185,90 @@ export default function TaskQuestionList({
 
   if (!questions.length && !loading) {
     return <Empty description={emptyText} />
+  }
+
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {questions.map((question, index) => {
+          const isFirst = index === 0
+          const isLast = index === questions.length - 1
+          const isActionLoading = actionLoadingId === question.id
+
+          return (
+            <article
+              key={question.id}
+              className="rounded-[16px] border border-[var(--lms-color-border)] bg-white/95 px-4 py-3"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Tag color={questionTypeColorMap[question.type]}>{questionTypeLabelMap[question.type]}</Tag>
+                <span className="text-xs text-stone-400">#{index + 1}</span>
+                <span className="text-xs text-stone-400">分值 {question.score}</span>
+              </div>
+              <div className="text-sm font-medium leading-6 text-stone-900">{question.title}</div>
+              {question.description ? (
+                <div className="mt-1 text-xs leading-5 text-stone-500">{question.description}</div>
+              ) : null}
+
+              {(question.options.length > 0 || showAnswer || question.analysis) ? (
+                <div className="mt-3 space-y-2 rounded-[12px] bg-stone-50 px-3 py-2">
+                  {question.options.length > 0 ? (
+                    <div className="text-xs leading-5 text-stone-600">
+                      选项：{question.options.map((item) => `${item.key}.${item.label}`).join('；')}
+                    </div>
+                  ) : null}
+                  {showAnswer ? (
+                    <div className="text-xs leading-5 text-stone-600">
+                      参考答案：{formatAnswer(question.answer)}
+                    </div>
+                  ) : null}
+                  {question.analysis ? (
+                    <div className="text-xs leading-5 text-stone-600">
+                      解析：{question.analysis}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {onMoveUp || onMoveDown || onDelete ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {onMoveUp ? (
+                    <Button
+                      size="small"
+                      disabled={isFirst || isActionLoading}
+                      onClick={() => onMoveUp(question.id)}
+                    >
+                      上移
+                    </Button>
+                  ) : null}
+                  {onMoveDown ? (
+                    <Button
+                      size="small"
+                      disabled={isLast || isActionLoading}
+                      onClick={() => onMoveDown(question.id)}
+                    >
+                      下移
+                    </Button>
+                  ) : null}
+                  {onDelete ? (
+                    <Popconfirm
+                      title="确认删除这道题目吗？"
+                      okText="删除"
+                      cancelText="取消"
+                      onConfirm={() => onDelete(question.id)}
+                    >
+                      <Button size="small" danger loading={isActionLoading}>
+                        删除
+                      </Button>
+                    </Popconfirm>
+                  ) : null}
+                </div>
+              ) : null}
+            </article>
+          )
+        })}
+      </div>
+    )
   }
 
   return (
