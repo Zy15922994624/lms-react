@@ -7,6 +7,8 @@ export type ResponsiveViewportLevel = 'mobile' | 'tablet' | 'laptop' | 'desktop'
 
 export default function useResponsiveLayout() {
   const screens = useBreakpoint()
+  const mobileModalWidth =
+    'min(680px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))'
 
   const viewportLevel: ResponsiveViewportLevel = screens.xxl
     ? 'wide'
@@ -23,6 +25,7 @@ export default function useResponsiveLayout() {
 
   return {
     screens,
+    mobileModalWidth,
     viewport,
     viewportLevel,
     isMobile: viewport === 'mobile',

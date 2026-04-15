@@ -5,6 +5,7 @@
   color-scheme: light;
   --lms-font-family:
     'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --lms-viewport-height: 100vh;
 
   --lms-color-primary: #ff6b35;
   --lms-color-primary-hover: #ff9a3c;
@@ -50,6 +51,12 @@
   --lms-layout-content-width-workspace-wide: 2280px;
 }
 
+@supports (height: 100dvh) {
+  :root {
+    --lms-viewport-height: 100dvh;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -60,6 +67,7 @@ html,
 body,
 #root {
   width: 100%;
+  max-width: 100%;
   min-height: 100%;
 }
 
@@ -70,6 +78,7 @@ html {
 body {
   min-width: 320px;
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(255, 154, 60, 0.12), transparent 24%),
     radial-gradient(circle at bottom right, rgba(255, 107, 53, 0.08), transparent 22%),
@@ -99,23 +108,33 @@ img {
 }
 
 .app-shell {
-  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  min-height: var(--lms-viewport-height);
+  overflow-x: clip;
 }
 
 .app-content-scroll {
-  height: calc(100vh - var(--lms-layout-header-height));
+  height: calc(var(--lms-viewport-height) - var(--lms-layout-header-height));
   overflow-y: auto;
-  padding: var(--lms-layout-page-padding-block) var(--lms-layout-page-padding-inline);
+  overflow-x: clip;
+  padding-block: var(--lms-layout-page-padding-block);
+  padding-bottom: calc(var(--lms-layout-page-padding-block) + env(safe-area-inset-bottom));
+  padding-inline: var(--lms-layout-page-padding-inline);
+  padding-inline-start: max(var(--lms-layout-page-padding-inline), env(safe-area-inset-left));
+  padding-inline-end: max(var(--lms-layout-page-padding-inline), env(safe-area-inset-right));
 }
 
 .app-content-container {
   --lms-layout-current-width: var(--lms-layout-content-width-standard);
   width: 100%;
+  min-width: 0;
   max-width: min(
     var(--lms-layout-current-width),
     calc(100vw - (var(--lms-layout-page-padding-inline) * 2))
   );
   margin: 0 auto;
+  animation: app-content-enter 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .app-content-container--narrow {
@@ -180,21 +199,66 @@ img {
   background: var(--lms-color-primary);
 }
 
+.app-safe-inline {
+  padding-inline-start: max(12px, env(safe-area-inset-left));
+  padding-inline-end: max(12px, env(safe-area-inset-right));
+}
+
+@keyframes app-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-content-container {
+    animation: none;
+  }
+}
+
 @media (min-width: 768px) {
   .app-content-scroll {
-    padding: max(18px, var(--lms-layout-page-padding-block))
-      max(18px, var(--lms-layout-page-padding-inline));
+    padding-block: max(18px, var(--lms-layout-page-padding-block));
+    padding-bottom: calc(max(18px, var(--lms-layout-page-padding-block)) + env(safe-area-inset-bottom));
+    padding-inline-start: max(18px, var(--lms-layout-page-padding-inline), env(safe-area-inset-left));
+    padding-inline-end: max(18px, var(--lms-layout-page-padding-inline), env(safe-area-inset-right));
   }
 
   .app-page {
     gap: var(--lms-space-8);
   }
+
+  .app-safe-inline {
+    padding-inline-start: max(24px, env(safe-area-inset-left));
+    padding-inline-end: max(24px, env(safe-area-inset-right));
+  }
 }
 
-@media (min-width: 1024px) {
+@media (max-width: 767px) {
   .app-content-scroll {
-    padding: max(20px, var(--lms-layout-page-padding-block))
-      max(20px, var(--lms-layout-page-padding-inline));
+    padding-block: 10px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-inline-start: max(10px, env(safe-area-inset-left));
+    padding-inline-end: max(10px, env(safe-area-inset-right));
+  }
+
+  .app-content-container {
+    max-width: none;
+    margin: 0;
+  }
+}
+
+@media (min-width: 992px) {
+  .app-content-scroll {
+    padding-block: max(20px, var(--lms-layout-page-padding-block));
+    padding-bottom: calc(max(20px, var(--lms-layout-page-padding-block)) + env(safe-area-inset-bottom));
+    padding-inline-start: max(20px, var(--lms-layout-page-padding-inline), env(safe-area-inset-left));
+    padding-inline-end: max(20px, var(--lms-layout-page-padding-inline), env(safe-area-inset-right));
   }
 
   .app-content-container--workspace {
@@ -202,13 +266,13 @@ img {
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1200px) {
   .app-content-container--workspace {
     --lms-layout-current-width: var(--lms-layout-content-width-workspace);
   }
 }
 
-@media (min-width: 1920px) {
+@media (min-width: 1600px) {
   .app-content-container--workspace {
     --lms-layout-current-width: var(--lms-layout-content-width-workspace-wide);
   }

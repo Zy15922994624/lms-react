@@ -27,7 +27,7 @@ export default function UserFormModal({
   onSubmit,
 }: UserFormModalProps) {
   const [form] = Form.useForm<UserFormValues>()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const isEditMode = Boolean(user)
   const isEditingCurrentUser = Boolean(user?.id && currentUserId && user.id === currentUserId)
 
@@ -76,7 +76,7 @@ export default function UserFormModal({
       cancelText="取消"
       confirmLoading={loading}
       destroyOnHidden
-      width={isMobile ? 'calc(100vw - 20px)' : undefined}
+      width={isMobile ? mobileModalWidth : undefined}
     >
       <Form<UserFormValues> form={form} layout="vertical" onFinish={handleFinish}>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -1,7 +1,7 @@
 /* 登录页样式 */
 
 .ll-root {
-  min-height: 100vh;
+  min-height: var(--lms-viewport-height);
   display: flex;
   font-family: var(--lms-font-family);
   background: var(--lms-color-bg);
@@ -19,7 +19,7 @@
   background: linear-gradient(160deg, #f6ede5 0%, #efe4d8 100%);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 991px) {
   .ll-left {
     display: none;
   }
@@ -96,7 +96,7 @@
   background: var(--lms-color-bg);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 991px) {
   .ll-right {
     width: 100%;
   }

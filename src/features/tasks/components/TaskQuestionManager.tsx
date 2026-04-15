@@ -31,7 +31,7 @@ function supportsQuestionSelection(taskType: TaskDetail['type']) {
 
 export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) {
   const queryClient = useQueryClient()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -238,7 +238,7 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       <Modal
         open={isPickerOpen}
         title="从题库选择题目"
-        width={isMobile ? 'calc(100vw - 20px)' : 920}
+        width={isMobile ? mobileModalWidth : 920}
         okText="加入任务"
         cancelText="取消"
         okButtonProps={{

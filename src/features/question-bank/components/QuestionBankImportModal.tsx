@@ -33,7 +33,7 @@ export default function QuestionBankImportModal({
   onCancel,
   onSuccess,
 }: QuestionBankImportModalProps) {
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const [courseId, setCourseId] = useState<string>()
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -150,7 +150,7 @@ export default function QuestionBankImportModal({
     <Modal
       open={open}
       title="导入题目"
-      width={isMobile ? 'calc(100vw - 20px)' : 680}
+      width={isMobile ? mobileModalWidth : 680}
       okText="开始导入"
       cancelText="取消"
       confirmLoading={importing || submitting}

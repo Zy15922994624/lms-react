@@ -72,12 +72,14 @@ export default function AppLayout() {
   const { currentUser, userRole, hasRole, logout } = useAuthStore()
 
   const role = userRole()
-  const isTabletNav = Boolean(screens.md) && !Boolean(screens.lg)
-  const isDesktopNav = Boolean(screens.lg)
+  const isTabletNav = (screens.md ?? false) && !(screens.lg ?? false)
+  const isDesktopNav = screens.lg ?? false
   const hasPersistentNav = isTabletNav || isDesktopNav
   const showCompactNav = isTabletNav
   const siderWidth = screens.xxl ? 300 : screens.xl ? 280 : isDesktopNav ? 248 : 96
-  const mobileDrawerWidth = screens.sm ? 320 : 288
+  const mobileDrawerWidth = screens.sm
+    ? 320
+    : 'calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right))'
   const selectedKey = resolveSelectedKey(location.pathname)
   const contentWidthMode = resolvePageWidthMode(location.pathname)
 
@@ -182,7 +184,7 @@ export default function AppLayout() {
           width={siderWidth}
           theme="light"
           style={{
-            height: '100vh',
+            height: 'var(--lms-viewport-height)',
             background: 'transparent',
             borderRight: '1px solid var(--lms-color-border)',
             overflow: 'hidden',
@@ -197,7 +199,7 @@ export default function AppLayout() {
       ) : (
         <Drawer
           placement="left"
-          size={mobileDrawerWidth}
+          width={mobileDrawerWidth}
           open={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
           closable={false}
@@ -217,7 +219,7 @@ export default function AppLayout() {
             backdropFilter: 'blur(16px)',
           }}
         >
-          <div className="flex h-full w-full items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="app-safe-inline flex h-full w-full items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {!hasPersistentNav ? (
                 <button

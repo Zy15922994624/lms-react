@@ -105,7 +105,7 @@ export default function TaskFormCard({
   onCancel,
 }: TaskFormCardProps) {
   const [form] = Form.useForm()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const [uploading, setUploading] = useState(false)
   const [attachmentFileList, setAttachmentFileList] = useState<AttachmentUploadFile[]>([])
   const [isPickerOpen, setIsPickerOpen] = useState(false)
@@ -521,7 +521,7 @@ export default function TaskFormCard({
       <Modal
         open={isPickerOpen}
         title="添加题目"
-        width={isMobile ? 'calc(100vw - 20px)' : 880}
+          width={isMobile ? mobileModalWidth : 880}
         okText="加入列表"
         cancelText="取消"
         onCancel={() => setIsPickerOpen(false)}

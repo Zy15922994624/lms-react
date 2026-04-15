@@ -35,7 +35,7 @@ function formatUpdatedAt(value: string) {
 export default function CoursesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageCourses = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
   const isStudentView = currentUser?.role === 'student'
@@ -481,7 +481,7 @@ export default function CoursesPage() {
       <Modal
         open={Boolean(pendingDeleteCourse)}
         title="删除课程"
-        width={isMobile ? 'calc(100vw - 20px)' : undefined}
+        width={isMobile ? mobileModalWidth : undefined}
         okText="删除"
         cancelText="取消"
         okButtonProps={{ danger: true, loading: deleteCourseMutation.isPending }}

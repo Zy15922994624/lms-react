@@ -32,7 +32,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            minHeight: '100vh',
+            minHeight: 'var(--lms-viewport-height)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

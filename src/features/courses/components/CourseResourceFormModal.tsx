@@ -54,7 +54,7 @@ function formatFileSize(size: number) {
 
 export default function CourseResourceFormModal(props: CourseResourceFormModalProps) {
   const { open, loading = false, onCancel } = props
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const initialValues = props.mode === 'edit' ? props.initialValues : undefined
   const [form] = Form.useForm<CourseResourceFormValues>()
   const [isDragActive, setIsDragActive] = useState(false)
@@ -142,7 +142,7 @@ export default function CourseResourceFormModal(props: CourseResourceFormModalPr
       onCancel={onCancel}
       onOk={() => form.submit()}
       destroyOnHidden
-      width={isMobile ? 'calc(100vw - 20px)' : undefined}
+      width={isMobile ? mobileModalWidth : undefined}
       afterOpenChange={(visible) => {
         if (visible) {
           return

@@ -52,3 +52,35 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 107, 53, 0.58);
 }
+
+@media (max-width: 767px) {
+  .app-panel {
+    border-radius: 20px !important;
+  }
+
+  .ant-modal {
+    margin: 12px auto !important;
+    max-width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  }
+
+  .ant-modal-content {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .ant-drawer-content-wrapper {
+    max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+  }
+
+  .ant-table-wrapper .ant-table-thead > tr > th,
+  .ant-table-wrapper .ant-table-tbody > tr > td {
+    padding: 10px 12px !important;
+    font-size: 12px;
+  }
+
+  .ant-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 8px;
+  }
+}

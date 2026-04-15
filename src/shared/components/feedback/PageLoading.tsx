@@ -8,7 +8,7 @@ export default function PageLoading({ tip = '加载中...' }: Props) {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: 'var(--lms-viewport-height)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

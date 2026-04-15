@@ -107,7 +107,10 @@ export default function NotificationBell() {
       open={open}
       onOpenChange={setOpen}
       content={
-        <div className="w-[360px] max-w-[calc(100vw-32px)]">
+        <div
+          className="w-[360px]"
+          style={{ maxWidth: 'calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right))' }}
+        >
           <div className="flex items-center justify-between border-b border-[var(--lms-color-border)] px-1 pb-3">
             <div>
               <div className="text-sm font-semibold text-stone-900">通知中心</div>

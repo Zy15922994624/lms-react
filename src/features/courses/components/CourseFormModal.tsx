@@ -24,7 +24,7 @@ export default function CourseFormModal({
   onSubmit,
 }: CourseFormModalProps) {
   const [form] = Form.useForm<CourseFormValues>()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const remoteCoverPreview = Form.useWatch('coverImage', form)
   const {
     selectedFile: selectedCoverFile,
@@ -97,7 +97,7 @@ export default function CourseFormModal({
       cancelText="取消"
       confirmLoading={loading || uploading}
       destroyOnHidden
-      width={isMobile ? 'calc(100vw - 20px)' : undefined}
+      width={isMobile ? mobileModalWidth : undefined}
     >
       <Form form={form} layout="vertical" onFinish={handleFinish}>
         <Form.Item

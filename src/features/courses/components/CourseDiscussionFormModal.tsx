@@ -19,7 +19,7 @@ export default function CourseDiscussionFormModal({
   onSubmit,
 }: CourseDiscussionFormModalProps) {
   const [form] = Form.useForm<CourseDiscussionFormValues>()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
 
   return (
     <Modal
@@ -31,7 +31,7 @@ export default function CourseDiscussionFormModal({
       onCancel={onCancel}
       onOk={() => form.submit()}
       destroyOnHidden
-      width={isMobile ? 'calc(100vw - 20px)' : undefined}
+      width={isMobile ? mobileModalWidth : undefined}
       afterOpenChange={(visible) => {
         if (!visible) {
           form.resetFields()

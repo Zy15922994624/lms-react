@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Input, Modal, Pagination, Popconfirm, Select, Spin, Tag } from 'antd'
@@ -7,9 +7,11 @@ import {
   DownloadOutlined,
   EditOutlined,
   FileTextOutlined,
+  MinusOutlined,
   PaperClipOutlined,
   PictureOutlined,
   PlusOutlined,
+  RedoOutlined,
   VideoCameraOutlined,
 } from '@ant-design/icons'
 import CourseWorkspaceFrame from '@/features/courses/components/CourseWorkspaceFrame'
@@ -143,6 +145,7 @@ export default function CourseResourcesPage() {
   const [editingResource, setEditingResource] = useState<CourseResource | null>(null)
   const imagePreviewContainerRef = useRef<HTMLDivElement | null>(null)
   const imageDragRef = useRef<{
+    pointerId: number
     startX: number
     startY: number
     originX: number
@@ -265,6 +268,18 @@ export default function CourseResourcesPage() {
     imageDragRef.current = null
   }
 
+  const adjustImageScale = useCallback((delta: number) => {
+    setImageScale((previous) => {
+      const next = Number(Math.min(4, Math.max(1, previous + delta)).toFixed(2))
+
+      if (next === 1) {
+        setImageOffset({ x: 0, y: 0 })
+      }
+
+      return next
+    })
+  }, [])
+
   const openImagePreview = () => {
     resetImagePreviewState()
     setIsImagePreviewOpen(true)
@@ -277,12 +292,16 @@ export default function CourseResourcesPage() {
 
 
 
-  const handleImageMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleImagePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (imageScale <= 1) {
       return
     }
 
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+
     imageDragRef.current = {
+      pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       originX: imageOffset.x,
@@ -291,8 +310,12 @@ export default function CourseResourcesPage() {
     setIsImageDragging(true)
   }
 
-  const handleImageMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageDragRef.current || imageScale <= 1) {
+  const handleImagePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      !imageDragRef.current ||
+      imageScale <= 1 ||
+      imageDragRef.current.pointerId !== event.pointerId
+    ) {
       return
     }
 
@@ -305,7 +328,14 @@ export default function CourseResourcesPage() {
     })
   }
 
-  const handleImageMouseUp = () => {
+  const handleImagePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      imageDragRef.current?.pointerId === event.pointerId &&
+      event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
     imageDragRef.current = null
     setIsImageDragging(false)
   }
@@ -315,12 +345,18 @@ export default function CourseResourcesPage() {
       return
     }
 
-    setCurrentPage(1)
-    setPageSize(100)
-    setSelectedType('all')
-    setSearchInput('')
-    setSearchKeyword('')
-    setSelectedResourceId(focusedResourceId)
+    const timer = window.setTimeout(() => {
+      setCurrentPage(1)
+      setPageSize(100)
+      setSelectedType('all')
+      setSearchInput('')
+      setSearchKeyword('')
+      setSelectedResourceId(focusedResourceId)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
   }, [focusedResourceId])
 
   useEffect(() => {
@@ -331,16 +367,7 @@ export default function CourseResourcesPage() {
     const container = imagePreviewContainerRef.current
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault()
-
-      setImageScale((previous) => {
-        const next = Number(Math.min(4, Math.max(1, previous - event.deltaY * 0.0015)).toFixed(2))
-
-        if (next === 1) {
-          setImageOffset({ x: 0, y: 0 })
-        }
-
-        return next
-      })
+      adjustImageScale(-event.deltaY * 0.0015)
     }
 
     container.addEventListener('wheel', handleWheel, { passive: false })
@@ -348,7 +375,7 @@ export default function CourseResourcesPage() {
     return () => {
       container.removeEventListener('wheel', handleWheel)
     }
-  }, [isImagePreviewOpen, selectedResource?.id, selectedResource?.type])
+  }, [adjustImageScale, isImagePreviewOpen, selectedResource?.id, selectedResource?.type])
 
   if (isCourseLoading || isResourcesLoading) {
     return <PageLoading />
@@ -776,28 +803,66 @@ export default function CourseResourcesPage() {
           <div
             ref={imagePreviewContainerRef}
             className={[
-              'max-h-[85vh] overflow-hidden rounded-[28px] bg-stone-950 shadow-[0_30px_80px_rgba(0,0,0,0.36)]',
+              'relative overflow-hidden rounded-[28px] bg-stone-950 shadow-[0_30px_80px_rgba(0,0,0,0.36)]',
               imageScale > 1
                 ? isImageDragging
                   ? 'cursor-grabbing'
                   : 'cursor-grab'
                 : 'cursor-zoom-in',
             ].join(' ')}
-            onMouseDown={handleImageMouseDown}
-            onMouseMove={handleImageMouseMove}
-            onMouseUp={handleImageMouseUp}
-            onMouseLeave={handleImageMouseUp}
+            style={{ maxHeight: 'calc(var(--lms-viewport-height) - 48px)' }}
+            onPointerDown={handleImagePointerDown}
+            onPointerMove={handleImagePointerMove}
+            onPointerUp={handleImagePointerUp}
+            onPointerCancel={handleImagePointerUp}
             onDoubleClick={resetImagePreviewState}
           >
+            <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/55 p-1 backdrop-blur-sm">
+              <Button
+                size="small"
+                type="text"
+                aria-label="缩小图片"
+                icon={<MinusOutlined />}
+                className="text-white hover:!text-white"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  adjustImageScale(-0.2)
+                }}
+              />
+              <Button
+                size="small"
+                type="text"
+                aria-label="重置图片缩放"
+                icon={<RedoOutlined />}
+                className="text-white hover:!text-white"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  resetImagePreviewState()
+                }}
+              />
+              <Button
+                size="small"
+                type="text"
+                aria-label="放大图片"
+                icon={<PlusOutlined />}
+                className="text-white hover:!text-white"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  adjustImageScale(0.2)
+                }}
+              />
+            </div>
             <img
               src={selectedResource.fileUrl}
               alt={selectedResource.title}
               draggable={false}
-              className="max-h-[85vh] max-w-[min(92vw,1520px)] object-contain select-none"
+              className="max-w-[min(92vw,1520px)] object-contain select-none"
               style={{
                 transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageScale})`,
                 transformOrigin: 'center center',
                 transition: isImageDragging ? 'none' : 'transform 0.16s ease',
+                maxHeight: 'calc(var(--lms-viewport-height) - 48px)',
+                touchAction: imageScale > 1 ? 'none' : 'auto',
               }}
             />
           </div>

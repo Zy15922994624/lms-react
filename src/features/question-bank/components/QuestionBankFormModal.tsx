@@ -98,7 +98,7 @@ export default function QuestionBankFormModal({
   onSubmit,
 }: QuestionBankFormModalProps) {
   const [form] = Form.useForm<QuestionBankFormState>()
-  const { isMobile } = useResponsiveLayout()
+  const { isMobile, mobileModalWidth } = useResponsiveLayout()
   const questionType = Form.useWatch('type', form) ?? 'single_choice'
   const watchedOptions = Form.useWatch('options', form)
 
@@ -144,14 +144,14 @@ export default function QuestionBankFormModal({
     <Modal
       open={open}
       title={question ? '编辑题目' : '新增题目'}
-      width={isMobile ? 'calc(100vw - 20px)' : 820}
+      width={isMobile ? mobileModalWidth : 820}
       okText={question ? '保存修改' : '创建题目'}
       cancelText="取消"
       confirmLoading={submitting}
       destroyOnHidden
       styles={{
         body: {
-          maxHeight: 'calc(100vh - 160px)',
+          maxHeight: 'calc(var(--lms-viewport-height) - 160px)',
           overflowY: 'auto',
           paddingTop: 12,
         },
