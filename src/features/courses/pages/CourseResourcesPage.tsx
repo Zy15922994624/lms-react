@@ -1,381 +1,84 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Input, Modal, Pagination, Popconfirm, Select, Spin, Tag } from 'antd'
 import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
-  FileTextOutlined,
   MinusOutlined,
   PaperClipOutlined,
-  PictureOutlined,
   PlusOutlined,
   RedoOutlined,
-  VideoCameraOutlined,
 } from '@ant-design/icons'
 import CourseWorkspaceFrame from '@/features/courses/components/CourseWorkspaceFrame'
 import CourseResourceFormModal from '@/features/courses/components/CourseResourceFormModal'
-import { courseService } from '@/features/courses/services/course.service'
+import {
+  canPreviewInline,
+  formatFileSize,
+  getUploaderName,
+  resourceTypeMeta,
+  resourceTypeOptions,
+  sortOptions,
+  type ResourceSortKey,
+  type ResourceTypeFilter,
+} from '@/features/courses/constants/course-resource-ui'
+import { useCourseResourcesPageModel } from '@/features/courses/hooks/useCourseResourcesPageModel'
 import { courseResourceService } from '@/features/courses/services/course-resource.service'
-import type {
-  CourseResource,
-  CourseResourceType,
-  UpdateCourseResourcePayload,
-} from '@/features/courses/types/course-resource'
-import { useAuthStore } from '@/features/auth/store/auth.store'
 import PageLoading from '@/shared/components/feedback/PageLoading'
-import { uiMessage } from '@/shared/components/feedback/message'
 import { ROUTES } from '@/shared/constants/routes'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 import { formatDateTime } from '@/shared/utils/date'
 
-type ResourceTypeFilter = CourseResourceType | 'all'
-type ResourceSortKey = 'recent' | 'name' | 'size'
-
-const resourceTypeOptions: Array<{ label: string; value: ResourceTypeFilter }> = [
-  { label: '全部', value: 'all' },
-  { label: '文档', value: 'document' },
-  { label: '视频', value: 'video' },
-  { label: '图片', value: 'image' },
-  { label: '其他', value: 'other' },
-]
-
-const sortOptions: Array<{ label: string; value: ResourceSortKey }> = [
-  { label: '最近上传', value: 'recent' },
-  { label: '名称排序', value: 'name' },
-  { label: '文件大小', value: 'size' },
-]
-
-const resourceTypeMeta: Record<
-  CourseResourceType,
-  {
-    label: string
-    icon: React.ReactNode
-    iconClassName: string
-    tagClassName: string
-  }
-> = {
-  document: {
-    label: '文档',
-    icon: <FileTextOutlined />,
-    iconClassName: 'bg-sky-50 text-sky-600',
-    tagClassName: 'bg-sky-50 text-sky-600',
-  },
-  video: {
-    label: '视频',
-    icon: <VideoCameraOutlined />,
-    iconClassName: 'bg-rose-50 text-rose-600',
-    tagClassName: 'bg-rose-50 text-rose-600',
-  },
-  image: {
-    label: '图片',
-    icon: <PictureOutlined />,
-    iconClassName: 'bg-emerald-50 text-emerald-600',
-    tagClassName: 'bg-emerald-50 text-emerald-600',
-  },
-  other: {
-    label: '其他',
-    icon: <PaperClipOutlined />,
-    iconClassName: 'bg-stone-100 text-stone-600',
-    tagClassName: 'bg-stone-100 text-stone-600',
-  },
-}
-
-function formatFileSize(size: number) {
-  if (size >= 1024 * 1024) {
-    return `${(size / 1024 / 1024).toFixed(1)} MB`
-  }
-
-  if (size >= 1024) {
-    return `${(size / 1024).toFixed(1)} KB`
-  }
-
-  return `${size} B`
-}
-
-function getUploaderName(resource: CourseResource) {
-  return resource.uploader?.fullName || resource.uploader?.username || '未知上传者'
-}
-
-function sortResources(resources: CourseResource[], sortBy: ResourceSortKey) {
-  const next = [...resources]
-
-  if (sortBy === 'name') {
-    next.sort((left, right) => left.title.localeCompare(right.title, 'zh-CN'))
-    return next
-  }
-
-  if (sortBy === 'size') {
-    next.sort((left, right) => right.size - left.size)
-    return next
-  }
-
-  next.sort(
-    (left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
-  )
-  return next
-}
-
-function canPreviewInline(resource: CourseResource) {
-  return resource.type === 'image' || resource.type === 'video'
-}
-
 export default function CourseResourcesPage() {
   const { courseId = '' } = useParams()
   const [searchParams] = useSearchParams()
-  const queryClient = useQueryClient()
-  const currentUser = useAuthStore((state) => state.currentUser)
-  const canManageResources = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
   const focusedResourceId = searchParams.get('resourceId')?.trim() || ''
 
-  const [searchInput, setSearchInput] = useState('')
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedType, setSelectedType] = useState<ResourceTypeFilter>('all')
-  const [sortBy, setSortBy] = useState<ResourceSortKey>('recent')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(focusedResourceId ? 100 : 10)
-  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null)
-  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false)
-  const [imageScale, setImageScale] = useState(1)
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
-  const [isImageDragging, setIsImageDragging] = useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingResource, setEditingResource] = useState<CourseResource | null>(null)
-  const imagePreviewContainerRef = useRef<HTMLDivElement | null>(null)
-  const imageDragRef = useRef<{
-    pointerId: number
-    startX: number
-    startY: number
-    originX: number
-    originY: number
-  } | null>(null)
-
-  const { data: course, isLoading: isCourseLoading } = useQuery({
-    queryKey: ['course', courseId],
-    queryFn: () => courseService.getCourseById(courseId),
-    enabled: Boolean(courseId),
-  })
-
   const {
-    data: resourcesPage,
-    isLoading: isResourcesLoading,
-    isFetching: isResourcesFetching,
-  } = useQuery({
-    queryKey: ['course-resources', courseId, currentPage, pageSize, searchKeyword, selectedType],
-    queryFn: () =>
-      courseResourceService.getCourseResources(courseId, {
-        page: currentPage,
-        pageSize,
-        search: searchKeyword || undefined,
-        type: selectedType === 'all' ? undefined : selectedType,
-      }),
-    enabled: Boolean(courseId),
-  })
-
-  const createResourceMutation = useMutation({
-    mutationFn: (payload: Parameters<typeof courseResourceService.createCourseResource>[1]) =>
-      courseResourceService.createCourseResource(courseId, payload),
-    onSuccess: async () => {
-      uiMessage.success('课程资源已上传')
-      setIsCreateModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
-    },
-    onError: () => {
-      uiMessage.error('上传课程资源失败')
-    },
-  })
-
-  const updateResourceMutation = useMutation({
-    mutationFn: ({
-      resourceId,
-      payload,
-    }: {
-      resourceId: string
-      payload: Parameters<typeof courseResourceService.updateCourseResource>[2]
-    }) => courseResourceService.updateCourseResource(courseId, resourceId, payload),
-    onSuccess: async () => {
-      uiMessage.success('资源信息已更新')
-      setEditingResource(null)
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
-    },
-    onError: () => {
-      uiMessage.error('更新资源信息失败')
-    },
-  })
-
-  const deleteResourceMutation = useMutation({
-    mutationFn: (resourceId: string) =>
-      courseResourceService.deleteCourseResource(courseId, resourceId),
-    onSuccess: async (_, deletedResourceId) => {
-      uiMessage.success('资源已删除')
-      if (selectedResourceId === deletedResourceId) {
-        setSelectedResourceId(null)
-      }
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
-    },
-    onError: () => {
-      uiMessage.error('删除资源失败')
-    },
-  })
-
-  const resources = useMemo(() => resourcesPage?.items ?? [], [resourcesPage])
-  const totalResources = resourcesPage?.total ?? 0
-  const sortedResources = useMemo(() => sortResources(resources, sortBy), [resources, sortBy])
-  const selectedResource = useMemo(() => {
-    if (!sortedResources.length) {
-      return null
-    }
-
-    return (
-      sortedResources.find((resource) => resource.id === selectedResourceId) ?? sortedResources[0]
-    )
-  }, [selectedResourceId, sortedResources])
-
-  const highlightedSummary = useMemo(() => {
-    if (!sortedResources.length) {
-      return '当前暂无资源'
-    }
-
-    return `共 ${totalResources} 项资源`
-  }, [sortedResources.length, totalResources])
-
-  const handleSearch = (value: string) => {
-    setCurrentPage(1)
-    setSearchKeyword(value.trim())
-  }
-
-  const handleCreateResource = async (
-    payload: Parameters<typeof courseResourceService.createCourseResource>[1],
-  ) => {
-    await createResourceMutation.mutateAsync(payload)
-  }
-
-  const handleUpdateResource = async (values: UpdateCourseResourcePayload) => {
-    if (!editingResource) return
-
-    await updateResourceMutation.mutateAsync({
-      resourceId: editingResource.id,
-      payload: values,
-    })
-  }
-
-  const resetImagePreviewState = () => {
-    setImageScale(1)
-    setImageOffset({ x: 0, y: 0 })
-    setIsImageDragging(false)
-    imageDragRef.current = null
-  }
-
-  const adjustImageScale = useCallback((delta: number) => {
-    setImageScale((previous) => {
-      const next = Number(Math.min(4, Math.max(1, previous + delta)).toFixed(2))
-
-      if (next === 1) {
-        setImageOffset({ x: 0, y: 0 })
-      }
-
-      return next
-    })
-  }, [])
-
-  const openImagePreview = () => {
-    resetImagePreviewState()
-    setIsImagePreviewOpen(true)
-  }
-
-  const closeImagePreview = () => {
-    setIsImagePreviewOpen(false)
-    resetImagePreviewState()
-  }
-
-
-
-  const handleImagePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (imageScale <= 1) {
-      return
-    }
-
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-
-    imageDragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: imageOffset.x,
-      originY: imageOffset.y,
-    }
-    setIsImageDragging(true)
-  }
-
-  const handleImagePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (
-      !imageDragRef.current ||
-      imageScale <= 1 ||
-      imageDragRef.current.pointerId !== event.pointerId
-    ) {
-      return
-    }
-
-    const deltaX = event.clientX - imageDragRef.current.startX
-    const deltaY = event.clientY - imageDragRef.current.startY
-
-    setImageOffset({
-      x: imageDragRef.current.originX + deltaX,
-      y: imageDragRef.current.originY + deltaY,
-    })
-  }
-
-  const handleImagePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (
-      imageDragRef.current?.pointerId === event.pointerId &&
-      event.currentTarget.hasPointerCapture(event.pointerId)
-    ) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-
-    imageDragRef.current = null
-    setIsImageDragging(false)
-  }
-
-  useEffect(() => {
-    if (!focusedResourceId) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      setCurrentPage(1)
-      setPageSize(100)
-      setSelectedType('all')
-      setSearchInput('')
-      setSearchKeyword('')
-      setSelectedResourceId(focusedResourceId)
-    }, 0)
-
-    return () => {
-      window.clearTimeout(timer)
-    }
-  }, [focusedResourceId])
-
-  useEffect(() => {
-    if (!isImagePreviewOpen || selectedResource?.type !== 'image' || !imagePreviewContainerRef.current) {
-      return
-    }
-
-    const container = imagePreviewContainerRef.current
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault()
-      adjustImageScale(-event.deltaY * 0.0015)
-    }
-
-    container.addEventListener('wheel', handleWheel, { passive: false })
-
-    return () => {
-      container.removeEventListener('wheel', handleWheel)
-    }
-  }, [adjustImageScale, isImagePreviewOpen, selectedResource?.id, selectedResource?.type])
+    canManageResources,
+    searchInput,
+    setSearchInput,
+    selectedType,
+    setSelectedType,
+    sortBy,
+    setSortBy,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    selectedResourceId,
+    setSelectedResourceId,
+    isImagePreviewOpen,
+    imageScale,
+    imageOffset,
+    isImageDragging,
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+    editingResource,
+    setEditingResource,
+    imagePreviewContainerRef,
+    course,
+    isCourseLoading,
+    isResourcesLoading,
+    isResourcesFetching,
+    totalResources,
+    sortedResources,
+    selectedResource,
+    highlightedSummary,
+    createResourceMutation,
+    updateResourceMutation,
+    deleteResourceMutation,
+    handleSearch,
+    handleCreateResource,
+    handleUpdateResource,
+    resetImagePreviewState,
+    adjustImageScale,
+    openImagePreview,
+    closeImagePreview,
+    handleImagePointerDown,
+    handleImagePointerMove,
+    handleImagePointerUp,
+  } = useCourseResourcesPageModel(courseId, focusedResourceId)
 
   if (isCourseLoading || isResourcesLoading) {
     return <PageLoading />
@@ -558,7 +261,7 @@ export default function CourseResourcesPage() {
                 options={resourceTypeOptions}
                 onChange={(value) => {
                   setCurrentPage(1)
-                  setSelectedType(value)
+                  setSelectedType(value as ResourceTypeFilter)
                 }}
                 className="[&_.ant-select-selector]:rounded-full [&_.ant-select-selector]:border-[var(--lms-color-border)] [&_.ant-select-selector]:px-4 [&_.ant-select-selector]:py-1"
               />
@@ -566,7 +269,7 @@ export default function CourseResourcesPage() {
               <Select
                 value={sortBy}
                 options={sortOptions}
-                onChange={setSortBy}
+                onChange={(value) => setSortBy(value as ResourceSortKey)}
                 className="[&_.ant-select-selector]:rounded-full [&_.ant-select-selector]:border-[var(--lms-color-border)] [&_.ant-select-selector]:px-4 [&_.ant-select-selector]:py-1"
               />
             </div>
@@ -655,11 +358,6 @@ export default function CourseResourcesPage() {
                                   </span>
                                 ) : null}
                               </div>
-
-                              {/* <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-stone-500">
-                                <span>{resource.originalFileName}</span>
-                                <span>{formatFileSize(resource.size)}</span>
-                              </div> */}
                             </div>
 
                             <div
@@ -769,8 +467,7 @@ export default function CourseResourcesPage() {
             </div>
           ) : null}
         </div>
-
-        </WorkspaceLayout>
+      </WorkspaceLayout>
 
       <CourseResourceFormModal
         open={isCreateModalOpen}

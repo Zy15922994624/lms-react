@@ -1,159 +1,53 @@
-import { useCallback, useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { Button, Dropdown, Empty, Input, Modal, Pagination, Select, Table, Tag } from 'antd'
-import type { MenuProps } from 'antd'
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
+import type { ColumnsType } from 'antd/es/table'
 import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/features/auth/store/auth.store'
-import { courseService } from '@/features/courses/services/course.service'
-import { taskService } from '@/features/tasks/services/task.service'
-import type { PendingGradingItem, TaskItem, TaskType } from '@/features/tasks/types/task'
+import { useTasksPageModel } from '@/features/tasks/hooks/useTasksPageModel'
+import {
+  getStudentActionLabel,
+  getStudentTaskStatus,
+  isStudentTaskPending,
+  taskTypeColorMap,
+  taskTypeLabelMap,
+} from '@/features/tasks/constants/task-ui'
+import type { PendingGradingItem, TaskItem } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
-import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
 
-const taskTypeLabelMap: Record<TaskType, string> = {
-  homework: '作业',
-  quiz: '测验',
-  project: '项目',
-  reading: '阅读',
-}
-
-const taskTypeColorMap: Record<TaskType, string> = {
-  homework: 'green',
-  quiz: 'orange',
-  project: 'blue',
-  reading: 'purple',
-}
-
-function getStudentTaskStatus(task: TaskItem) {
-  if (task.currentUserSubmissionStatus === 'graded') {
-    return task.currentUserScore !== undefined ? `已评分 ${task.currentUserScore} 分` : '已评分'
-  }
-
-  if (task.currentUserSubmissionStatus === 'submitted') {
-    return '已提交'
-  }
-
-  return '未提交'
-}
-
-function isStudentTaskPending(task: TaskItem) {
-  return !task.currentUserSubmissionStatus || task.currentUserSubmissionStatus === 'not_submitted'
-}
-
-function getStudentActionLabel(task: TaskItem) {
-  if (task.currentUserSubmissionStatus === 'graded') {
-    return '查看评分'
-  }
-
-  if (task.currentUserSubmissionStatus === 'submitted') {
-    return '查看提交'
-  }
-
-  return '去完成'
-}
-
 export default function TasksPage() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const currentUser = useAuthStore((state) => state.currentUser)
-  const isTeacherView = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
   const { isMobile } = useResponsiveLayout()
-
-  const [searchText, setSearchText] = useState('')
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>()
-  const [selectedType, setSelectedType] = useState<TaskType | undefined>()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskItem | null>(null)
-
-  const { data: coursesPage } = useQuery({
-    queryKey: ['task-courses'],
-    queryFn: () => courseService.getCourses(true, 1, 100),
-  })
-
   const {
-    data: taskPage,
+    isTeacherView,
+    searchText,
+    setSearchText,
+    selectedCourseId,
+    selectedType,
+    page,
+    pageSize,
+    pendingDeleteTask,
+    taskPage,
+    tasks,
+    total,
+    focusTasks,
+    pendingGradingItems,
     isLoading,
     isFetching,
-  } = useQuery({
-    queryKey: ['tasks', page, pageSize, selectedCourseId, selectedType, searchKeyword],
-    queryFn: () =>
-      taskService.getTasks({
-        page,
-        pageSize,
-        courseId: selectedCourseId,
-        type: selectedType,
-        search: searchKeyword || undefined,
-      }),
-  })
-
-  const { data: pendingGradingItems = [] } = useQuery({
-    queryKey: ['tasks', 'pending-grading'],
-    queryFn: () => taskService.getPendingGrading(),
-    enabled: isTeacherView,
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (taskId: string) => taskService.deleteTask(taskId),
-    onSuccess: async () => {
-      uiMessage.success('任务已删除')
-      setPendingDeleteTask(null)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks', 'pending-grading'] }),
-      ])
-    },
-    onError: () => {
-      uiMessage.error('删除任务失败')
-    },
-  })
-
-  const tasks = useMemo(() => taskPage?.items ?? [], [taskPage])
-  const total = taskPage?.total ?? 0
-
-  const focusTasks = useMemo(
-    () =>
-      [...tasks]
-        .sort((left, right) => {
-          const pendingWeight =
-            Number(isStudentTaskPending(left)) - Number(isStudentTaskPending(right))
-          if (pendingWeight !== 0) {
-            return pendingWeight > 0 ? -1 : 1
-          }
-
-          return new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime()
-        })
-        .slice(0, 5),
-    [tasks],
-  )
-
-  const actionItems = useCallback(
-    (task: TaskItem): MenuProps['items'] => [
-      {
-        key: 'detail',
-        label: '查看详情',
-        onClick: () => navigate(`/tasks/${task.id}`),
-      },
-      {
-        key: 'edit',
-        label: '编辑任务',
-        onClick: () => navigate(`/tasks/${task.id}/edit`),
-      },
-      {
-        key: 'delete',
-        label: '删除任务',
-        danger: true,
-        onClick: () => setPendingDeleteTask(task),
-      },
-    ],
-    [navigate],
-  )
+    deleteMutation,
+    courseOptions,
+    taskTypeOptions,
+    actionItems,
+    handleSearch,
+    handleCourseChange,
+    handleTypeChange,
+    handleTaskTableChange,
+    handlePageChange,
+    openTaskDetail,
+    openTaskCreate,
+    closeDeleteModal,
+    confirmDeleteTask,
+  } = useTasksPageModel()
 
   const pendingGradingColumns = useMemo<ColumnsType<PendingGradingItem>>(
     () => [
@@ -166,7 +60,7 @@ export default function TasksPage() {
           <button
             type="button"
             className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
-            onClick={() => navigate(`/tasks/${record.taskId}`)}
+            onClick={() => openTaskDetail(record.taskId)}
           >
             {value}
           </button>
@@ -188,7 +82,7 @@ export default function TasksPage() {
         render: (value: string) => formatDateTime(value),
       },
     ],
-    [navigate],
+    [openTaskDetail],
   )
 
   const focusTaskColumns = useMemo<ColumnsType<TaskItem>>(
@@ -202,7 +96,7 @@ export default function TasksPage() {
           <button
             type="button"
             className="text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
-            onClick={() => navigate(`/tasks/${record.id}`)}
+            onClick={() => openTaskDetail(record.id)}
           >
             {value}
           </button>
@@ -226,14 +120,14 @@ export default function TasksPage() {
         render: (_value, record) => (
           <Button
             type={isStudentTaskPending(record) ? 'primary' : 'link'}
-            onClick={() => navigate(`/tasks/${record.id}`)}
+            onClick={() => openTaskDetail(record.id)}
           >
             {getStudentActionLabel(record)}
           </Button>
         ),
       },
     ],
-    [navigate],
+    [openTaskDetail],
   )
 
   const taskColumns = useMemo<ColumnsType<TaskItem>>(
@@ -256,7 +150,7 @@ export default function TasksPage() {
             <button
               type="button"
               className="line-clamp-1 text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
-              onClick={() => navigate(`/tasks/${record.id}`)}
+              onClick={() => openTaskDetail(record.id)}
             >
               {value}
             </button>
@@ -321,7 +215,7 @@ export default function TasksPage() {
               render: (_value: unknown, record: TaskItem) => (
                 <Button
                   type={isStudentTaskPending(record) ? 'primary' : 'link'}
-                  onClick={() => navigate(`/tasks/${record.id}`)}
+                  onClick={() => openTaskDetail(record.id)}
                 >
                   {getStudentActionLabel(record)}
                 </Button>
@@ -329,21 +223,11 @@ export default function TasksPage() {
             },
           ]),
     ],
-    [actionItems, isTeacherView, navigate],
+    [actionItems, isTeacherView, openTaskDetail],
   )
 
   if (isLoading && !taskPage) {
     return <PageLoading />
-  }
-
-  const handleTaskTableChange = (pagination: TablePaginationConfig) => {
-    setPage(pagination.current ?? 1)
-    setPageSize(pagination.pageSize ?? 10)
-  }
-
-  const handlePageChange = (nextPage: number, nextPageSize: number) => {
-    setPage(nextPage)
-    setPageSize(nextPageSize)
   }
 
   return (
@@ -371,7 +255,7 @@ export default function TasksPage() {
                       <button
                         type="button"
                         className="text-left text-sm font-medium text-stone-900"
-                        onClick={() => navigate(`/tasks/${item.taskId}`)}
+                        onClick={() => openTaskDetail(item.taskId)}
                       >
                         {item.taskTitle}
                       </button>
@@ -413,7 +297,7 @@ export default function TasksPage() {
                       <button
                         type="button"
                         className="text-left text-sm font-medium text-stone-900"
-                        onClick={() => navigate(`/tasks/${item.id}`)}
+                        onClick={() => openTaskDetail(item.id)}
                       >
                         {item.title}
                       </button>
@@ -424,7 +308,7 @@ export default function TasksPage() {
                         <Button
                           size="small"
                           type={isStudentTaskPending(item) ? 'primary' : 'default'}
-                          onClick={() => navigate(`/tasks/${item.id}`)}
+                          onClick={() => openTaskDetail(item.id)}
                         >
                           {getStudentActionLabel(item)}
                         </Button>
@@ -459,10 +343,7 @@ export default function TasksPage() {
             <Input.Search
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              onSearch={(value) => {
-                setPage(1)
-                setSearchKeyword(value.trim())
-              }}
+              onSearch={handleSearch}
               placeholder="搜索任务标题"
               className="xl:w-[280px] 2xl:w-[320px]"
             />
@@ -471,35 +352,19 @@ export default function TasksPage() {
               placeholder="全部课程"
               value={selectedCourseId}
               className="xl:w-[200px]"
-              options={(coursesPage?.items ?? []).map((course) => ({
-                label: course.title,
-                value: course.id,
-              }))}
-              onChange={(value) => {
-                setPage(1)
-                setSelectedCourseId(value)
-              }}
+              options={courseOptions}
+              onChange={handleCourseChange}
             />
             <Select
               allowClear
               placeholder="全部类型"
               value={selectedType}
               className="xl:w-[160px]"
-              options={Object.entries(taskTypeLabelMap).map(([value, label]) => ({
-                label,
-                value,
-              }))}
-              onChange={(value) => {
-                setPage(1)
-                setSelectedType(value)
-              }}
+              options={taskTypeOptions}
+              onChange={handleTypeChange}
             />
             {isTeacherView ? (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate('/tasks/create')}
-              >
+              <Button type="primary" icon={<PlusOutlined />} onClick={openTaskCreate}>
                 创建任务
               </Button>
             ) : null}
@@ -529,7 +394,7 @@ export default function TasksPage() {
                     <button
                       type="button"
                       className="text-left text-sm font-medium leading-6 text-stone-900"
-                      onClick={() => navigate(`/tasks/${task.id}`)}
+                      onClick={() => openTaskDetail(task.id)}
                     >
                       {task.title}
                     </button>
@@ -546,14 +411,14 @@ export default function TasksPage() {
                     </div>
                     <div className="mt-3 flex items-center gap-2">
                       {isTeacherView ? (
-                        <Button size="small" onClick={() => navigate(`/tasks/${task.id}`)}>
+                        <Button size="small" onClick={() => openTaskDetail(task.id)}>
                           查看详情
                         </Button>
                       ) : (
                         <Button
                           size="small"
                           type={isStudentTaskPending(task) ? 'primary' : 'default'}
-                          onClick={() => navigate(`/tasks/${task.id}`)}
+                          onClick={() => openTaskDetail(task.id)}
                         >
                           {getStudentActionLabel(task)}
                         </Button>
@@ -604,11 +469,8 @@ export default function TasksPage() {
         okText="删除"
         cancelText="取消"
         okButtonProps={{ danger: true, loading: deleteMutation.isPending }}
-        onCancel={() => setPendingDeleteTask(null)}
-        onOk={() => {
-          if (!pendingDeleteTask) return
-          deleteMutation.mutate(pendingDeleteTask.id)
-        }}
+        onCancel={closeDeleteModal}
+        onOk={confirmDeleteTask}
       >
         <p className="text-sm leading-7 text-stone-500">是否删除任务</p>
       </Modal>
