@@ -9,25 +9,25 @@ import type {
 
 export const questionBankService = {
   async getQuestionBank(query: QuestionBankQuery = {}) {
-    return (await client.get<QuestionBankPage>('/question-bank', {
+    return client.get<QuestionBankPage>('/question-bank', {
       params: query,
-    })) as unknown as QuestionBankPage
+    })
   },
 
   async getQuestionById(questionId: string) {
-    return (await client.get<QuestionBankItem>(`/question-bank/${questionId}`)) as unknown as QuestionBankItem
+    return client.get<QuestionBankItem>(`/question-bank/${questionId}`)
   },
 
   async createQuestion(payload: QuestionBankPayload) {
-    return (await client.post<QuestionBankItem>('/question-bank', payload)) as unknown as QuestionBankItem
+    return client.post<QuestionBankItem>('/question-bank', payload)
   },
 
   async updateQuestion(questionId: string, payload: Partial<QuestionBankPayload>) {
-    return (await client.patch<QuestionBankItem>(`/question-bank/${questionId}`, payload)) as unknown as QuestionBankItem
+    return client.patch<QuestionBankItem>(`/question-bank/${questionId}`, payload)
   },
 
   async deleteQuestion(questionId: string) {
-    return (await client.delete(`/question-bank/${questionId}`)) as unknown as null
+    return client.delete<null>(`/question-bank/${questionId}`)
   },
 
   async importByExcel(file: File, courseId: string) {
@@ -35,16 +35,16 @@ export const questionBankService = {
     formData.append('courseId', courseId)
     formData.append('file', file)
 
-    return (await client.post<QuestionBankImportResult>('/question-bank/import', formData, {
+    return client.post<QuestionBankImportResult>('/question-bank/import', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    })) as unknown as QuestionBankImportResult
+    })
   },
 
   async downloadTemplate() {
-    return (await client.get<Blob>('/question-bank/template/download', {
+    return client.get<Blob>('/question-bank/template/download', {
       responseType: 'blob',
-    })) as unknown as Blob
+    })
   },
 }

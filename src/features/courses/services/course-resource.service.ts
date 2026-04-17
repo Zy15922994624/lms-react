@@ -13,13 +13,13 @@ function buildDownloadFileName(resource: CourseResource) {
 
 export const courseResourceService = {
   async getCourseResources(courseId: string, query: CourseResourceQuery = {}) {
-    return (await client.get<CourseResourcesPage>(`/courses/${courseId}/resources`, {
+    return client.get<CourseResourcesPage>(`/courses/${courseId}/resources`, {
       params: query,
-    })) as unknown as CourseResourcesPage
+    })
   },
 
   async createCourseResource(courseId: string, payload: CreateCourseResourcePayload) {
-    return (await client.post<CourseResource>(`/courses/${courseId}/resources`, payload)) as unknown as CourseResource
+    return client.post<CourseResource>(`/courses/${courseId}/resources`, payload)
   },
 
   async updateCourseResource(
@@ -27,20 +27,20 @@ export const courseResourceService = {
     resourceId: string,
     payload: UpdateCourseResourcePayload,
   ) {
-    return (await client.patch<CourseResource>(
+    return client.patch<CourseResource>(
       `/courses/${courseId}/resources/${resourceId}`,
       payload,
-    )) as unknown as CourseResource
+    )
   },
 
   async deleteCourseResource(courseId: string, resourceId: string) {
-    return (await client.delete(`/courses/${courseId}/resources/${resourceId}`)) as unknown as null
+    return client.delete<null>(`/courses/${courseId}/resources/${resourceId}`)
   },
 
   async downloadCourseResource(courseId: string, resource: CourseResource) {
-    const blob = (await client.get<Blob>(`/courses/${courseId}/resources/${resource.id}/download`, {
+    const blob = await client.get<Blob>(`/courses/${courseId}/resources/${resource.id}/download`, {
       responseType: 'blob',
-    })) as unknown as Blob
+    })
 
     const fileName = buildDownloadFileName(resource)
     const blobUrl = window.URL.createObjectURL(blob)

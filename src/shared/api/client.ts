@@ -1,4 +1,9 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 import type { ApiResponse } from '@/shared/types/common'
@@ -7,11 +12,15 @@ declare module 'axios' {
   interface InternalAxiosRequestConfig {
     skipErrorHandler?: boolean
   }
+
+  interface AxiosRequestConfig {
+    skipErrorHandler?: boolean
+  }
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-const client = axios.create({
+const rawClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
@@ -19,7 +28,7 @@ const client = axios.create({
   },
 })
 
-client.interceptors.request.use(
+rawClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = useAuthStore.getState().token
 
@@ -32,14 +41,8 @@ client.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error),
 )
 
-client.interceptors.response.use(
-  (response) => {
-    if (response.config.responseType === 'blob') {
-      return response.data
-    }
-
-    return response.data.data
-  },
+rawClient.interceptors.response.use(
+  (response) => response,
   (error: AxiosError<ApiResponse>) => {
     if (import.meta.env.DEV) {
       console.error('API Error:', {
@@ -92,5 +95,62 @@ client.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+function isApiResponse<T>(payload: unknown): payload is ApiResponse<T> {
+  if (!payload || typeof payload !== 'object') {
+    return false
+  }
+
+  const record = payload as Record<string, unknown>
+  return 'code' in record && 'message' in record && 'data' in record
+}
+
+function unwrapPayload<T>(payload: unknown): T {
+  if (!isApiResponse<T>(payload)) {
+    throw new Error('接口响应格式不符合约定，应为 { code, message, data }')
+  }
+
+  return payload.data
+}
+
+async function requestData<T = unknown, D = unknown>(
+  config: AxiosRequestConfig<D>,
+): Promise<T> {
+  if (config.responseType === 'blob') {
+    const response = await rawClient.request<Blob, AxiosResponse<Blob, D>>(config)
+    return response.data as T
+  }
+
+  const response = await rawClient.request<ApiResponse<T>, AxiosResponse<ApiResponse<T>, D>>(
+    config,
+  )
+  return unwrapPayload(response.data)
+}
+
+const client = {
+  request<T = unknown, D = unknown>(config: AxiosRequestConfig<D>) {
+    return requestData<T, D>(config)
+  },
+
+  get<T = unknown, D = unknown>(url: string, config?: AxiosRequestConfig<D>) {
+    return requestData<T, D>({ ...(config ?? {}), method: 'get', url })
+  },
+
+  delete<T = unknown, D = unknown>(url: string, config?: AxiosRequestConfig<D>) {
+    return requestData<T, D>({ ...(config ?? {}), method: 'delete', url })
+  },
+
+  post<T = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>) {
+    return requestData<T, D>({ ...(config ?? {}), method: 'post', url, data })
+  },
+
+  put<T = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>) {
+    return requestData<T, D>({ ...(config ?? {}), method: 'put', url, data })
+  },
+
+  patch<T = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig<D>) {
+    return requestData<T, D>({ ...(config ?? {}), method: 'patch', url, data })
+  },
+}
 
 export default client

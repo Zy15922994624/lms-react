@@ -6,11 +6,11 @@ export const uploadService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    return (await client.post<UploadedFile>('/upload/single', formData, {
+    return client.post<UploadedFile>('/upload/single', formData, {
       params: { scene },
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-    })) as unknown as UploadedFile
+    })
   },
 }

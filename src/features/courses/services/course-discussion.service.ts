@@ -11,15 +11,15 @@ import type {
 
 export const courseDiscussionService = {
   async getCourseDiscussions(courseId: string, query: CourseDiscussionQuery = {}) {
-    return (await client.get<CourseDiscussionsPage>(`/courses/${courseId}/discussions`, {
+    return client.get<CourseDiscussionsPage>(`/courses/${courseId}/discussions`, {
       params: query,
-    })) as unknown as CourseDiscussionsPage
+    })
   },
 
   async getCourseDiscussionById(courseId: string, discussionId: string) {
-    return (await client.get<CourseDiscussionDetail>(
+    return client.get<CourseDiscussionDetail>(
       `/courses/${courseId}/discussions/${discussionId}`,
-    )) as unknown as CourseDiscussionDetail
+    )
   },
 
   async getCourseDiscussionReplies(
@@ -27,23 +27,23 @@ export const courseDiscussionService = {
     discussionId: string,
     query: { page?: number; pageSize?: number } = {},
   ) {
-    return (await client.get<CourseDiscussionRepliesPage>(
+    return client.get<CourseDiscussionRepliesPage>(
       `/courses/${courseId}/discussions/${discussionId}/replies`,
       {
         params: query,
       },
-    )) as unknown as CourseDiscussionRepliesPage
+    )
   },
 
   async createCourseDiscussion(courseId: string, payload: CreateCourseDiscussionPayload) {
-    return (await client.post<CourseDiscussionDetail>(
+    return client.post<CourseDiscussionDetail>(
       `/courses/${courseId}/discussions`,
       payload,
-    )) as unknown as CourseDiscussionDetail
+    )
   },
 
   async deleteCourseDiscussion(courseId: string, discussionId: string) {
-    return (await client.delete(`/courses/${courseId}/discussions/${discussionId}`)) as unknown as null
+    return client.delete<null>(`/courses/${courseId}/discussions/${discussionId}`)
   },
 
   async createCourseDiscussionReply(
@@ -51,15 +51,15 @@ export const courseDiscussionService = {
     discussionId: string,
     payload: CreateCourseDiscussionReplyPayload,
   ) {
-    return (await client.post<CourseDiscussionReply>(
+    return client.post<CourseDiscussionReply>(
       `/courses/${courseId}/discussions/${discussionId}/replies`,
       payload,
-    )) as unknown as CourseDiscussionReply
+    )
   },
 
   async deleteCourseDiscussionReply(courseId: string, discussionId: string, replyId: string) {
-    return (await client.delete(
+    return client.delete<null>(
       `/courses/${courseId}/discussions/${discussionId}/replies/${replyId}`,
-    )) as unknown as null
+    )
   },
 }

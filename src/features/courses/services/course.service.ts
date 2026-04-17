@@ -11,25 +11,25 @@ const COURSE_MEMBERS_FETCH_PAGE_SIZE = 100
 
 export const courseService = {
   async getCourses(includeArchived = true, page = 1, pageSize = 10) {
-    return (await client.get<CoursesPage>('/courses', {
+    return client.get<CoursesPage>('/courses', {
       params: { includeArchived, page, pageSize },
-    })) as unknown as CoursesPage
+    })
   },
 
   async getCourseById(courseId: string) {
-    return (await client.get<CourseDetail>(`/courses/${courseId}`)) as unknown as CourseDetail
+    return client.get<CourseDetail>(`/courses/${courseId}`)
   },
 
   async getAvailableCourses(keyword?: string) {
-    return (await client.get<CourseSummary[]>('/courses/available', {
+    return client.get<CourseSummary[]>('/courses/available', {
       params: keyword ? { keyword } : undefined,
-    })) as unknown as CourseSummary[]
+    })
   },
 
   async getCourseMembers(courseId: string, page = 1, pageSize = 20) {
-    return (await client.get<CourseMembersPage>(`/courses/${courseId}/members`, {
+    return client.get<CourseMembersPage>(`/courses/${courseId}/members`, {
       params: { page, pageSize },
-    })) as unknown as CourseMembersPage
+    })
   },
 
   async getAllCourseStudents(courseId: string) {
@@ -57,26 +57,26 @@ export const courseService = {
   },
 
   async removeCourseMember(courseId: string, userId: string) {
-    return (await client.delete(`/courses/${courseId}/members/${userId}`)) as unknown as null
+    return client.delete<null>(`/courses/${courseId}/members/${userId}`)
   },
 
   async createCourse(payload: CourseFormValues) {
-    return (await client.post<CourseDetail>('/courses', payload)) as unknown as CourseDetail
+    return client.post<CourseDetail>('/courses', payload)
   },
 
   async updateCourse(courseId: string, payload: CourseFormValues) {
-    return (await client.patch<CourseDetail>(`/courses/${courseId}`, payload)) as unknown as CourseDetail
+    return client.patch<CourseDetail>(`/courses/${courseId}`, payload)
   },
 
   async setCourseArchiveStatus(courseId: string, isArchived: boolean) {
-    return (await client.patch(`/courses/${courseId}/archive`, { isArchived })) as unknown as null
+    return client.patch<null>(`/courses/${courseId}/archive`, { isArchived })
   },
 
   async deleteCourse(courseId: string) {
-    return (await client.delete(`/courses/${courseId}`)) as unknown as null
+    return client.delete<null>(`/courses/${courseId}`)
   },
 
   async joinCourse(courseId: string) {
-    return (await client.post(`/courses/${courseId}/join`)) as unknown as null
+    return client.post<null>(`/courses/${courseId}/join`)
   },
 }

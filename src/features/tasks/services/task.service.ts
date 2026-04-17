@@ -17,20 +17,20 @@ import type {
 
 export const taskService = {
   async getTasks(query: TaskQuery = {}) {
-    return (await client.get<TasksPage>('/tasks', {
+    return client.get<TasksPage>('/tasks', {
       params: query,
-    })) as unknown as TasksPage
+    })
   },
 
   async getTaskById(taskId: string) {
-    return (await client.get<TaskDetail>(`/tasks/${taskId}`)) as unknown as TaskDetail
+    return client.get<TaskDetail>(`/tasks/${taskId}`)
   },
 
   async downloadTaskAttachment(taskId: string, attachment: TaskFile) {
-    const blob = (await client.get<Blob>(`/tasks/${taskId}/attachments/download`, {
+    const blob = await client.get<Blob>(`/tasks/${taskId}/attachments/download`, {
       params: { key: attachment.key },
       responseType: 'blob',
-    })) as unknown as Blob
+    })
 
     const fileName = attachment.originalName || attachment.name || 'attachment.file'
     const blobUrl = window.URL.createObjectURL(blob)
@@ -44,58 +44,58 @@ export const taskService = {
   },
 
   async createTask(payload: TaskFormValues) {
-    return (await client.post<TaskDetail>('/tasks', payload)) as unknown as TaskDetail
+    return client.post<TaskDetail>('/tasks', payload)
   },
 
   async updateTask(taskId: string, payload: Partial<TaskFormValues>) {
-    return (await client.patch<TaskDetail>(`/tasks/${taskId}`, payload)) as unknown as TaskDetail
+    return client.patch<TaskDetail>(`/tasks/${taskId}`, payload)
   },
 
   async deleteTask(taskId: string) {
-    return (await client.delete(`/tasks/${taskId}`)) as unknown as null
+    return client.delete<null>(`/tasks/${taskId}`)
   },
 
   async getTaskQuestions(taskId: string) {
-    return (await client.get<TaskQuestion[]>(`/tasks/${taskId}/questions`)) as unknown as TaskQuestion[]
+    return client.get<TaskQuestion[]>(`/tasks/${taskId}/questions`)
   },
 
   async addTaskQuestionsFromBank(taskId: string, payload: AddTaskQuestionsFromBankPayload) {
-    return (await client.post<TaskQuestion[]>(
+    return client.post<TaskQuestion[]>(
       `/tasks/${taskId}/questions/from-bank`,
       payload,
-    )) as unknown as TaskQuestion[]
+    )
   },
 
   async reorderTaskQuestions(taskId: string, payload: ReorderTaskQuestionsPayload) {
-    return (await client.patch(`/tasks/${taskId}/questions/reorder`, payload)) as unknown as null
+    return client.patch<null>(`/tasks/${taskId}/questions/reorder`, payload)
   },
 
   async deleteTaskQuestion(questionId: string) {
-    return (await client.delete(`/tasks/questions/${questionId}`)) as unknown as null
+    return client.delete<null>(`/tasks/questions/${questionId}`)
   },
 
   async getCurrentSubmission(taskId: string) {
-    return (await client.get<TaskSubmission | null>(`/tasks/${taskId}/submission`)) as unknown as TaskSubmission | null
+    return client.get<TaskSubmission | null>(`/tasks/${taskId}/submission`)
   },
 
   async submitTask(taskId: string, payload: TaskSubmissionValues) {
-    return (await client.post<TaskSubmission>(`/tasks/${taskId}/submission`, payload)) as unknown as TaskSubmission
+    return client.post<TaskSubmission>(`/tasks/${taskId}/submission`, payload)
   },
 
   async getTaskSubmissions(taskId: string, page = 1, pageSize = 10) {
-    return (await client.get<TaskSubmissionsPage>(`/tasks/${taskId}/submissions`, {
+    return client.get<TaskSubmissionsPage>(`/tasks/${taskId}/submissions`, {
       params: { page, pageSize },
-    })) as unknown as TaskSubmissionsPage
+    })
   },
 
   async gradeSubmission(taskId: string, payload: GradeTaskSubmissionPayload) {
-    return (await client.post<TaskSubmission>(
+    return client.post<TaskSubmission>(
       `/tasks/${taskId}/submissions/grade`,
       payload,
-    )) as unknown as TaskSubmission
+    )
   },
 
   async getPendingGrading() {
-    return (await client.get<PendingGradingItem[]>('/tasks/pending-grading')) as unknown as PendingGradingItem[]
+    return client.get<PendingGradingItem[]>('/tasks/pending-grading')
   },
 }

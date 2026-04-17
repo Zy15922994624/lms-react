@@ -8,24 +8,24 @@ import type {
 
 export const userManagementService = {
   async getUsers(query: UserManagementQuery) {
-    return (await client.get<UserManagementPage>('/users', {
+    return client.get<UserManagementPage>('/users', {
       params: query,
-    })) as unknown as UserManagementPage
+    })
   },
 
   async getUserStats() {
-    return (await client.get<UserManagementStats>('/users/stats')) as unknown as UserManagementStats
+    return client.get<UserManagementStats>('/users/stats')
   },
 
   async createUser(payload: UserFormValues) {
-    return (await client.post('/users', payload)) as unknown as null
+    return client.post<null>('/users', payload)
   },
 
   async updateUser(userId: string, payload: UserFormValues) {
-    return (await client.patch(`/users/${userId}`, payload)) as unknown as null
+    return client.patch<null>(`/users/${userId}`, payload)
   },
 
   async deleteUser(userId: string) {
-    return (await client.delete(`/users/${userId}`)) as unknown as null
+    return client.delete<null>(`/users/${userId}`)
   },
 }

@@ -7,26 +7,26 @@ import type {
 
 export const notificationService = {
   async getNotifications(query: NotificationQuery = {}) {
-    return (await client.get<NotificationsPage>('/notifications', {
+    return client.get<NotificationsPage>('/notifications', {
       params: query,
-    })) as unknown as NotificationsPage
+    })
   },
 
   async getUnreadCount() {
-    return (await client.get<NotificationUnreadCount>(
+    return client.get<NotificationUnreadCount>(
       '/notifications/unread-count',
-    )) as unknown as NotificationUnreadCount
+    )
   },
 
   async markAsRead(notificationId: string) {
-    return (await client.patch(`/notifications/${notificationId}/read`)) as unknown as null
+    return client.patch<null>(`/notifications/${notificationId}/read`)
   },
 
   async markAllAsRead() {
-    return (await client.patch('/notifications/read-all')) as unknown as number | null
+    return client.patch<number | null>('/notifications/read-all')
   },
 
   async deleteNotification(notificationId: string) {
-    return (await client.delete(`/notifications/${notificationId}`)) as unknown as null
+    return client.delete<null>(`/notifications/${notificationId}`)
   },
 }
