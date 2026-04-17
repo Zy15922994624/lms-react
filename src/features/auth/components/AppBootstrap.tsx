@@ -9,14 +9,7 @@ interface Props {
 }
 
 export default function AppBootstrap({ children }: Props) {
-  const {
-    token,
-    currentUser,
-    setUser,
-    logout,
-    isLoading,
-    setLoading,
-  } = useAuthStore()
+  const { token, currentUser, setUser, logout, isLoading, setLoading } = useAuthStore()
 
   const hasToken = Boolean(token)
 
