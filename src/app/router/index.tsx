@@ -2,23 +2,23 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ROUTES, getRoleHomePath } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
-import CoursesPage from '@/features/courses/pages/CoursesPage'
-import CourseOverviewPage from '@/features/courses/pages/CourseOverviewPage'
-import CourseMembersPage from '@/features/courses/pages/CourseMembersPage'
-import CourseResourcesPage from '@/features/courses/pages/CourseResourcesPage'
-import CourseDiscussionsPage from '@/features/courses/pages/CourseDiscussionsPage'
-import NotificationsPage from '@/features/notifications/pages/NotificationsPage'
-import QuestionBankPage from '@/features/question-bank/pages/QuestionBankPage'
-import TasksPage from '@/features/tasks/pages/TasksPage'
-import TaskCreatePage from '@/features/tasks/pages/TaskCreatePage'
-import TaskDetailPage from '@/features/tasks/pages/TaskDetailPage'
-import TaskEditPage from '@/features/tasks/pages/TaskEditPage'
-import UsersPage from '@/features/users/pages/UsersPage'
 import ProtectedRoute from './ProtectedRoute'
 import AppLayout from '@/shared/layout/AppLayout'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'))
+const TasksPage = lazy(() => import('@/features/tasks/pages/TasksPage'))
+const TaskCreatePage = lazy(() => import('@/features/tasks/pages/TaskCreatePage'))
+const TaskDetailPage = lazy(() => import('@/features/tasks/pages/TaskDetailPage'))
+const TaskEditPage = lazy(() => import('@/features/tasks/pages/TaskEditPage'))
+const CoursesPage = lazy(() => import('@/features/courses/pages/CoursesPage'))
+const CourseOverviewPage = lazy(() => import('@/features/courses/pages/CourseOverviewPage'))
+const CourseMembersPage = lazy(() => import('@/features/courses/pages/CourseMembersPage'))
+const CourseResourcesPage = lazy(() => import('@/features/courses/pages/CourseResourcesPage'))
+const CourseDiscussionsPage = lazy(() => import('@/features/courses/pages/CourseDiscussionsPage'))
+const QuestionBankPage = lazy(() => import('@/features/question-bank/pages/QuestionBankPage'))
+const NotificationsPage = lazy(() => import('@/features/notifications/pages/NotificationsPage'))
+const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'))
 
 export default function AppRouter() {
   const { isLoggedIn, userRole } = useAuthStore()

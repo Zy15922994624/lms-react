@@ -46,14 +46,6 @@ export default defineConfig(({ mode }) => {
               return 'vendor-query'
             }
 
-            if (id.includes('/antd/') || id.includes('/@ant-design/icons/')) {
-              return 'vendor-antd'
-            }
-
-            if (id.includes('/rc-')) {
-              return 'vendor-antd-rc'
-            }
-
             if (id.includes('/@dnd-kit/')) {
               return 'vendor-dnd'
             }
