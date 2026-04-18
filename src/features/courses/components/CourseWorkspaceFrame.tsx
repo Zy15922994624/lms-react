@@ -68,7 +68,9 @@ export default function CourseWorkspaceFrame({
               <span
                 className={[
                   'rounded-full px-3 py-1 text-xs font-medium',
-                  course.isArchived ? 'bg-stone-100 text-stone-500' : 'bg-emerald-50 text-emerald-600',
+                  course.isArchived
+                    ? 'bg-stone-100 text-stone-500'
+                    : 'bg-emerald-50 text-emerald-600',
                 ].join(' ')}
               >
                 {course.isArchived ? '已归档' : '进行中'}

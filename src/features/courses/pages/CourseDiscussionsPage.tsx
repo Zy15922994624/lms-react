@@ -1,25 +1,13 @@
 import { type UIEvent, useDeferredValue, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
-import {
-  DeleteOutlined,
-  MessageOutlined,
-  PlusOutlined,
-  SendOutlined,
-} from '@ant-design/icons'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { DeleteOutlined, MessageOutlined, PlusOutlined, SendOutlined } from '@ant-design/icons'
 import { Button, Empty, Input, Popconfirm, Spin } from 'antd'
 import CourseWorkspaceFrame from '@/features/courses/components/CourseWorkspaceFrame'
 import CourseDiscussionFormModal from '@/features/courses/components/CourseDiscussionFormModal'
 import { courseDiscussionService } from '@/features/courses/services/course-discussion.service'
 import { courseService } from '@/features/courses/services/course.service'
-import type {
-  CourseDiscussionReply,
-} from '@/features/courses/types/course-discussion'
+import type { CourseDiscussionReply } from '@/features/courses/types/course-discussion'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
@@ -125,7 +113,8 @@ export default function CourseDiscussionsPage() {
 
   const discussionDetailQuery = useQuery({
     queryKey: ['course-discussion', courseId, activeDiscussionId],
-    queryFn: () => courseDiscussionService.getCourseDiscussionById(courseId, activeDiscussionId || ''),
+    queryFn: () =>
+      courseDiscussionService.getCourseDiscussionById(courseId, activeDiscussionId || ''),
     enabled: Boolean(courseId && activeDiscussionId),
   })
 
@@ -205,10 +194,7 @@ export default function CourseDiscussionsPage() {
     onSuccess: async (_, variables) => {
       uiMessage.success('回复已发送')
       setReplyContent('')
-      await Promise.all([
-        refreshDiscussionList(),
-        refreshDiscussionDetail(variables.discussionId),
-      ])
+      await Promise.all([refreshDiscussionList(), refreshDiscussionDetail(variables.discussionId)])
     },
   })
 
@@ -217,10 +203,7 @@ export default function CourseDiscussionsPage() {
       courseDiscussionService.deleteCourseDiscussionReply(courseId, discussionId, replyId),
     onSuccess: async (_, variables) => {
       uiMessage.success('回复已删除')
-      await Promise.all([
-        refreshDiscussionList(),
-        refreshDiscussionDetail(variables.discussionId),
-      ])
+      await Promise.all([refreshDiscussionList(), refreshDiscussionDetail(variables.discussionId)])
     },
   })
 
@@ -297,51 +280,51 @@ export default function CourseDiscussionsPage() {
                 }}
               >
                 <div className="space-y-3">
-                {replies.length ? (
-                  replies.map((reply) => (
-                    <div
-                      key={reply.id}
-                      className="rounded-[22px] border border-[var(--lms-color-border)] bg-white px-4 py-4"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-stone-900">
-                            {formatAuthorName(reply.author)}
+                  {replies.length ? (
+                    replies.map((reply) => (
+                      <div
+                        key={reply.id}
+                        className="rounded-[22px] border border-[var(--lms-color-border)] bg-white px-4 py-4"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-stone-900">
+                              {formatAuthorName(reply.author)}
+                            </div>
+                            <div className="mt-1 text-xs text-stone-400">
+                              {formatDateLabel(reply.createdAt)}
+                            </div>
                           </div>
-                          <div className="mt-1 text-xs text-stone-400">
-                            {formatDateLabel(reply.createdAt)}
-                          </div>
+                          {canDeleteByRole(currentUser?.id, currentUser?.role, reply.authorId) ? (
+                            <Popconfirm
+                              title="删除这条回复？"
+                              okText="删除"
+                              cancelText="取消"
+                              onConfirm={() =>
+                                deleteReplyMutation.mutate({
+                                  discussionId: selectedDiscussion.id,
+                                  replyId: reply.id,
+                                })
+                              }
+                            >
+                              <Button
+                                type="text"
+                                danger
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                loading={deleteReplyMutation.isPending}
+                              />
+                            </Popconfirm>
+                          ) : null}
                         </div>
-                        {canDeleteByRole(currentUser?.id, currentUser?.role, reply.authorId) ? (
-                          <Popconfirm
-                            title="删除这条回复？"
-                            okText="删除"
-                            cancelText="取消"
-                            onConfirm={() =>
-                              deleteReplyMutation.mutate({
-                                discussionId: selectedDiscussion.id,
-                                replyId: reply.id,
-                              })
-                            }
-                          >
-                            <Button
-                              type="text"
-                              danger
-                              size="small"
-                              icon={<DeleteOutlined />}
-                              loading={deleteReplyMutation.isPending}
-                            />
-                          </Popconfirm>
-                        ) : null}
+                        <div className="mt-3 text-sm leading-7 text-stone-600">{reply.content}</div>
                       </div>
-                      <div className="mt-3 text-sm leading-7 text-stone-600">{reply.content}</div>
+                    ))
+                  ) : (
+                    <div className="rounded-[22px] border border-dashed border-[var(--lms-color-border)] px-4 py-8 text-center text-sm text-stone-400">
+                      暂无回复
                     </div>
-                  ))
-                ) : (
-                  <div className="rounded-[22px] border border-dashed border-[var(--lms-color-border)] px-4 py-8 text-center text-sm text-stone-400">
-                    暂无回复
-                  </div>
-                )}
+                  )}
 
                   {repliesQuery.isFetchingNextPage ? (
                     <div className="flex justify-center py-2">
@@ -476,7 +459,9 @@ export default function CourseDiscussionsPage() {
                             <div className="flex items-center gap-2 text-xs text-stone-400">
                               <MessageOutlined />
                               <span>{formatAuthorName(discussion.author)}</span>
-                              <span>{formatDateLabel(discussion.lastReplyAt || discussion.createdAt)}</span>
+                              <span>
+                                {formatDateLabel(discussion.lastReplyAt || discussion.createdAt)}
+                              </span>
                             </div>
                             <div className="mt-3 text-xl font-semibold tracking-[-0.03em] text-stone-900">
                               {discussion.title}

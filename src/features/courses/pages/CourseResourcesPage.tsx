@@ -222,7 +222,9 @@ export default function CourseResourcesPage() {
     <CourseWorkspaceFrame course={course}>
       <WorkspaceLayout preset="resource" aside={renderPreviewPanel()}>
         <div className="app-panel overflow-hidden">
-          <div className={`border-b border-[var(--lms-color-border)] ${workspacePanelPadding.section}`}>
+          <div
+            className={`border-b border-[var(--lms-color-border)] ${workspacePanelPadding.section}`}
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">

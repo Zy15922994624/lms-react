@@ -35,7 +35,11 @@ export default function CourseMembersPage() {
     enabled: Boolean(courseId),
   })
 
-  const { data: membersPage, isLoading: isMembersLoading, isFetching: isMembersFetching } = useQuery({
+  const {
+    data: membersPage,
+    isLoading: isMembersLoading,
+    isFetching: isMembersFetching,
+  } = useQuery({
     queryKey: ['course-members', courseId, currentPage, pageSize],
     queryFn: () => courseService.getCourseMembers(courseId, currentPage, pageSize),
     enabled: Boolean(courseId),
