@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Pagination, Popconfirm, Select, Table, Tag } from 'antd'
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
+import type { ColumnsType } from 'antd/es/table'
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -20,15 +20,16 @@ import {
 } from '@/features/notifications/utils/notification'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const { page, setPage, pageSize, handleTableChange, handlePageChange } = usePaginationState()
   const [typeFilter, setTypeFilter] = useState<NotificationType | undefined>()
   const [readFilter, setReadFilter] = useState<NotificationReadFilter>('all')
   const { isMobile } = useResponsiveLayout()
@@ -59,7 +60,7 @@ export default function NotificationsPage() {
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => notificationService.markAsRead(notificationId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
+      await invalidateQueryKeys(queryClient, [notificationQueryKeys.all])
     },
   })
 
@@ -67,7 +68,7 @@ export default function NotificationsPage() {
     mutationFn: () => notificationService.markAllAsRead(),
     onSuccess: async () => {
       uiMessage.success('已将全部通知标记为已读')
-      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
+      await invalidateQueryKeys(queryClient, [notificationQueryKeys.all])
     },
     onError: () => {
       uiMessage.error('全部已读操作失败')
@@ -78,7 +79,7 @@ export default function NotificationsPage() {
     mutationFn: (notificationId: string) => notificationService.deleteNotification(notificationId),
     onSuccess: async () => {
       uiMessage.success('通知已删除')
-      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
+      await invalidateQueryKeys(queryClient, [notificationQueryKeys.all])
     },
     onError: () => {
       uiMessage.error('删除通知失败')
@@ -170,16 +171,6 @@ export default function NotificationsPage() {
     return <PageLoading />
   }
 
-  const handleTableChange = (pagination: TablePaginationConfig) => {
-    setPage(pagination.current ?? 1)
-    setPageSize(pagination.pageSize ?? 10)
-  }
-
-  const handlePageChange = (nextPage: number, nextPageSize: number) => {
-    setPage(nextPage)
-    setPageSize(nextPageSize)
-  }
-
   return (
     <div className="space-y-6 lg:space-y-8">
       <WorkspaceLayout
@@ -216,7 +207,7 @@ export default function NotificationsPage() {
               <Button
                 block
                 icon={<ReloadOutlined />}
-                onClick={() => queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })}
+                onClick={() => void invalidateQueryKeys(queryClient, [notificationQueryKeys.all])}
               >
                 刷新通知
               </Button>

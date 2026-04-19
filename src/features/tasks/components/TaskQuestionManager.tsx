@@ -12,6 +12,7 @@ import { taskService } from '@/features/tasks/services/task.service'
 import type { TaskDetail } from '@/features/tasks/types/task'
 import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 import TaskQuestionList from './TaskQuestionList'
 
 interface TaskQuestionManagerProps {
@@ -84,10 +85,10 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
       uiMessage.success('题目已加入任务')
       setSelectedRowKeys([])
       setIsPickerOpen(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['task-questions', task.id],
+        ['task', task.id],
+        ['tasks'],
       ])
     },
     onError: () => {
@@ -102,10 +103,10 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
     },
     onSuccess: async () => {
       uiMessage.success('题目已删除')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['task-questions', task.id],
+        ['task', task.id],
+        ['tasks'],
       ])
     },
     onError: () => {
@@ -120,10 +121,10 @@ export default function TaskQuestionManager({ task }: TaskQuestionManagerProps) 
     mutationFn: (questionOrders: Array<{ questionId: string; order: number }>) =>
       taskService.reorderTaskQuestions(task.id, { questionOrders }),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['task-questions', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['task-questions', task.id],
+        ['task', task.id],
+        ['tasks'],
       ])
     },
     onError: () => {

@@ -1,14 +1,15 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MenuProps } from 'antd'
-import type { TablePaginationConfig } from 'antd/es/table'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { courseService } from '@/features/courses/services/course.service'
 import { uiMessage } from '@/shared/components/feedback/message'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
 import { taskService } from '@/features/tasks/services/task.service'
 import { isStudentTaskPending, taskTypeLabelMap } from '@/features/tasks/constants/task-ui'
 import type { TaskItem, TaskType } from '@/features/tasks/types/task'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export function useTasksPageModel() {
   const navigate = useNavigate()
@@ -20,8 +21,13 @@ export function useTasksPageModel() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>()
   const [selectedType, setSelectedType] = useState<TaskType | undefined>()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const {
+    page,
+    setPage,
+    pageSize,
+    handleTableChange: handleTaskTableChange,
+    handlePageChange,
+  } = usePaginationState()
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskItem | null>(null)
 
   const { data: coursesPage } = useQuery({
@@ -56,10 +62,7 @@ export function useTasksPageModel() {
     onSuccess: async () => {
       uiMessage.success('任务已删除')
       setPendingDeleteTask(null)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks', 'pending-grading'] }),
-      ])
+      await invalidateQueryKeys(queryClient, [['tasks'], ['tasks', 'pending-grading']])
     },
     onError: () => {
       uiMessage.error('删除任务失败')
@@ -128,27 +131,17 @@ export function useTasksPageModel() {
   const handleSearch = useCallback((value: string) => {
     setPage(1)
     setSearchKeyword(value.trim())
-  }, [])
+  }, [setPage])
 
   const handleCourseChange = useCallback((value?: string) => {
     setPage(1)
     setSelectedCourseId(value)
-  }, [])
+  }, [setPage])
 
   const handleTypeChange = useCallback((value?: TaskType) => {
     setPage(1)
     setSelectedType(value)
-  }, [])
-
-  const handleTaskTableChange = useCallback((pagination: TablePaginationConfig) => {
-    setPage(pagination.current ?? 1)
-    setPageSize(pagination.pageSize ?? 10)
-  }, [])
-
-  const handlePageChange = useCallback((nextPage: number, nextPageSize: number) => {
-    setPage(nextPage)
-    setPageSize(nextPageSize)
-  }, [])
+  }, [setPage])
 
   const openTaskDetail = useCallback(
     (taskId: string) => {

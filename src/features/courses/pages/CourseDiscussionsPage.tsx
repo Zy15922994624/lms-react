@@ -17,6 +17,7 @@ import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { ROUTES } from '@/shared/constants/routes'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export default function CourseDiscussionsPage() {
   const { courseId = '' } = useParams()
@@ -100,9 +101,9 @@ export default function CourseDiscussionsPage() {
   }
 
   const refreshDiscussionDetail = async (discussionId: string) => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['course-discussion', courseId, discussionId] }),
-      queryClient.invalidateQueries({ queryKey: ['course-discussion-replies', courseId, discussionId] }),
+    await invalidateQueryKeys(queryClient, [
+      ['course-discussion', courseId, discussionId],
+      ['course-discussion-replies', courseId, discussionId],
     ])
   }
 

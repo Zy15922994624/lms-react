@@ -7,6 +7,7 @@ import type { TaskFormValues, TaskType } from '@/features/tasks/types/task'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 function supportsQuestionSelection(taskType: TaskType) {
   return taskType === 'homework' || taskType === 'quiz'
@@ -36,9 +37,9 @@ export default function TaskCreatePage() {
       return task
     },
     onSuccess: async (task) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
-        queryClient.invalidateQueries({ queryKey: ['task', task.id] }),
+      await invalidateQueryKeys(queryClient, [
+        ['tasks'],
+        ['task', task.id],
       ])
       uiMessage.success('任务创建成功')
       navigate(`/tasks/${task.id}`)

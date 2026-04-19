@@ -6,6 +6,8 @@ import { courseResourceService } from '@/features/courses/services/course-resour
 import { sortResources, type ResourceSortKey, type ResourceTypeFilter } from '@/features/courses/constants/course-resource-ui'
 import type { CourseResource, UpdateCourseResourcePayload } from '@/features/courses/types/course-resource'
 import { uiMessage } from '@/shared/components/feedback/message'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export function useCourseResourcesPageModel(courseId: string, focusedResourceId: string) {
   const queryClient = useQueryClient()
@@ -16,8 +18,8 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedType, setSelectedType] = useState<ResourceTypeFilter>('all')
   const [sortBy, setSortBy] = useState<ResourceSortKey>('recent')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(focusedResourceId ? 100 : 10)
+  const { page: currentPage, setPage: setCurrentPage, pageSize, setPageSize } =
+    usePaginationState({ initialPageSize: focusedResourceId ? 100 : 10 })
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null)
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false)
   const [imageScale, setImageScale] = useState(1)
@@ -62,7 +64,7 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
     onSuccess: async () => {
       uiMessage.success('课程资源已上传')
       setIsCreateModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
+      await invalidateQueryKeys(queryClient, [['course-resources', courseId]])
     },
     onError: () => {
       uiMessage.error('上传课程资源失败')
@@ -80,7 +82,7 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
     onSuccess: async () => {
       uiMessage.success('资源信息已更新')
       setEditingResource(null)
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
+      await invalidateQueryKeys(queryClient, [['course-resources', courseId]])
     },
     onError: () => {
       uiMessage.error('更新资源信息失败')
@@ -95,7 +97,7 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
       if (selectedResourceId === deletedResourceId) {
         setSelectedResourceId(null)
       }
-      await queryClient.invalidateQueries({ queryKey: ['course-resources', courseId] })
+      await invalidateQueryKeys(queryClient, [['course-resources', courseId]])
     },
     onError: () => {
       uiMessage.error('删除资源失败')
@@ -126,7 +128,7 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
   const handleSearch = useCallback((value: string) => {
     setCurrentPage(1)
     setSearchKeyword(value.trim())
-  }, [])
+  }, [setCurrentPage])
 
   const handleCreateResource = useCallback(
     async (payload: Parameters<typeof courseResourceService.createCourseResource>[1]) => {
@@ -241,7 +243,7 @@ export function useCourseResourcesPageModel(courseId: string, focusedResourceId:
     return () => {
       window.clearTimeout(timer)
     }
-  }, [focusedResourceId])
+  }, [focusedResourceId, setCurrentPage, setPageSize])
 
   useEffect(() => {
     if (!isImagePreviewOpen || selectedResource?.type !== 'image' || !imagePreviewContainerRef.current) {

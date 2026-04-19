@@ -15,8 +15,10 @@ import type {
 import { mapFormValuesToPayload, summarizeTypeCount } from '@/features/question-bank/components/question-bank-page/utils'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export default function QuestionBankPage() {
   const queryClient = useQueryClient()
@@ -26,8 +28,12 @@ export default function QuestionBankPage() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedType, setSelectedType] = useState<QuestionType | 'all'>('all')
   const [selectedCourseId, setSelectedCourseId] = useState<string | 'all'>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const {
+    page: currentPage,
+    setPage: setCurrentPage,
+    pageSize,
+    handlePageChange,
+  } = usePaginationState()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<QuestionBankItem | null>(null)
@@ -66,7 +72,7 @@ export default function QuestionBankPage() {
     onSuccess: async () => {
       uiMessage.success('题目已创建')
       setIsModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['question-bank'] })
+      await invalidateQueryKeys(queryClient, [['question-bank']])
     },
     onError: () => {
       uiMessage.error('创建题目失败')
@@ -80,7 +86,7 @@ export default function QuestionBankPage() {
       uiMessage.success('题目已更新')
       setEditingQuestion(null)
       setIsModalOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ['question-bank'] })
+      await invalidateQueryKeys(queryClient, [['question-bank']])
     },
     onError: () => {
       uiMessage.error('更新题目失败')
@@ -91,7 +97,7 @@ export default function QuestionBankPage() {
     mutationFn: (questionId: string) => questionBankService.deleteQuestion(questionId),
     onSuccess: async () => {
       uiMessage.success('题目已删除')
-      await queryClient.invalidateQueries({ queryKey: ['question-bank'] })
+      await invalidateQueryKeys(queryClient, [['question-bank']])
     },
     onError: () => {
       uiMessage.error('删除题目失败')
@@ -178,10 +184,7 @@ export default function QuestionBankPage() {
           deleting={deleteMutation.isPending}
           onOpenEditModal={openEditModal}
           onDeleteQuestion={(questionId) => deleteMutation.mutate(questionId)}
-          onPageChange={(page, nextPageSize) => {
-            setCurrentPage(page)
-            setPageSize(nextPageSize)
-          }}
+          onPageChange={handlePageChange}
         />
       </WorkspaceLayout>
 
@@ -202,7 +205,7 @@ export default function QuestionBankPage() {
         courses={courses}
         onCancel={() => setIsImportModalOpen(false)}
         onSuccess={async () => {
-          await queryClient.invalidateQueries({ queryKey: ['question-bank'] })
+          await invalidateQueryKeys(queryClient, [['question-bank']])
         }}
       />
     </div>

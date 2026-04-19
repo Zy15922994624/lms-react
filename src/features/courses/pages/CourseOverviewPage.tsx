@@ -15,6 +15,7 @@ import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 export default function CourseOverviewPage() {
   const navigate = useNavigate()
@@ -60,9 +61,9 @@ export default function CourseOverviewPage() {
     mutationFn: (isArchived: boolean) => courseService.setCourseArchiveStatus(courseId, isArchived),
     onSuccess: async (_, isArchived) => {
       uiMessage.success(isArchived ? '课程已归档' : '课程已恢复')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['course', courseId],
+        ['courses'],
       ])
     },
     onError: () => {

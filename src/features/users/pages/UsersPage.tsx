@@ -9,9 +9,11 @@ import type { UserFormValues, UserManagementItem } from '@/features/users/types/
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageLoading from '@/shared/components/feedback/PageLoading'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 const roleLabelMap = {
   admin: '管理员',
@@ -32,8 +34,8 @@ export default function UsersPage() {
   const [searchInput, setSearchInput] = useState('')
   const [searchKeyword, setSearchKeyword] = useState('')
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'teacher' | 'student'>('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const { page: currentPage, setPage: setCurrentPage, pageSize, handlePageChange } =
+    usePaginationState()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserManagementItem | null>(null)
 
@@ -62,10 +64,7 @@ export default function UsersPage() {
     onSuccess: async () => {
       uiMessage.success('用户已创建')
       setIsModalOpen(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['users'] }),
-        queryClient.invalidateQueries({ queryKey: ['user-stats'] }),
-      ])
+      await invalidateQueryKeys(queryClient, [['users'], ['user-stats']])
     },
   })
 
@@ -76,10 +75,7 @@ export default function UsersPage() {
       uiMessage.success('用户已更新')
       setEditingUser(null)
       setIsModalOpen(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['users'] }),
-        queryClient.invalidateQueries({ queryKey: ['user-stats'] }),
-      ])
+      await invalidateQueryKeys(queryClient, [['users'], ['user-stats']])
     },
   })
 
@@ -87,10 +83,7 @@ export default function UsersPage() {
     mutationFn: (userId: string) => userManagementService.deleteUser(userId),
     onSuccess: async () => {
       uiMessage.success('用户已删除')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['users'] }),
-        queryClient.invalidateQueries({ queryKey: ['user-stats'] }),
-      ])
+      await invalidateQueryKeys(queryClient, [['users'], ['user-stats']])
     },
   })
 
@@ -349,10 +342,7 @@ export default function UsersPage() {
                 size={isMobile ? 'small' : undefined}
                 showSizeChanger={!isMobile}
                 pageSizeOptions={[10, 20, 50]}
-                onChange={(page, nextPageSize) => {
-                  setCurrentPage(page)
-                  setPageSize(nextPageSize)
-                }}
+                onChange={handlePageChange}
               />
             </div>
           ) : null}

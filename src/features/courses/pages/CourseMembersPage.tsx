@@ -1,4 +1,3 @@
-﻿import { useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Avatar, Button, Popconfirm, Table, Tag } from 'antd'
@@ -10,8 +9,10 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { ROUTES } from '@/shared/constants/routes'
 import PageLoading from '@/shared/components/feedback/PageLoading'
 import { uiMessage } from '@/shared/components/feedback/message'
+import { usePaginationState } from '@/shared/hooks/usePaginationState'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 const roleLabelMap: Record<string, string> = {
   teacher: '教师',
@@ -26,8 +27,12 @@ export default function CourseMembersPage() {
   const currentUser = useAuthStore((state) => state.currentUser)
   const canManageMembers = currentUser?.role === 'teacher' || currentUser?.role === 'admin'
   const { isMobile, isTablet } = useResponsiveLayout()
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const {
+    page: currentPage,
+    pageSize,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePaginationState()
 
   const { data: course, isLoading: isCourseLoading } = useQuery({
     queryKey: ['course', courseId],
@@ -49,10 +54,10 @@ export default function CourseMembersPage() {
     mutationFn: (userId: string) => courseService.removeCourseMember(courseId, userId),
     onSuccess: async () => {
       uiMessage.success('成员已移出课程')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['course-members', courseId] }),
-        queryClient.invalidateQueries({ queryKey: ['course', courseId] }),
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['course-members', courseId],
+        ['course', courseId],
+        ['courses'],
       ])
     },
     onError: () => {
@@ -167,16 +172,8 @@ export default function CourseMembersPage() {
               total: totalMembers,
               showSizeChanger: true,
               showTotal: (total) => `共 ${total} 名成员`,
-              onChange: (page, nextPageSize) => {
-                setCurrentPage(page)
-                if (nextPageSize !== pageSize) {
-                  setPageSize(nextPageSize)
-                }
-              },
-              onShowSizeChange: (_, nextPageSize) => {
-                setCurrentPage(1)
-                setPageSize(nextPageSize)
-              },
+              onChange: handlePageChange,
+              onShowSizeChange: (_, nextPageSize) => handlePageSizeChange(nextPageSize),
             }}
           />
         </div>

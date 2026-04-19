@@ -15,6 +15,7 @@ import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 const EMPTY_COURSES: CourseSummary[] = []
 
@@ -68,9 +69,9 @@ export default function CoursesPage() {
     onSuccess: async (_, variables) => {
       uiMessage.success('课程更新成功')
       setFormOpen(false)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
-        queryClient.invalidateQueries({ queryKey: ['course', variables.courseId] }),
+      await invalidateQueryKeys(queryClient, [
+        ['courses'],
+        ['course', variables.courseId],
       ])
     },
     onError: () => {
@@ -83,9 +84,9 @@ export default function CoursesPage() {
       courseService.setCourseArchiveStatus(courseId, isArchived),
     onSuccess: async (_, variables) => {
       uiMessage.success(variables.isArchived ? '课程已归档' : '课程已恢复')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
-        queryClient.invalidateQueries({ queryKey: ['course', variables.courseId] }),
+      await invalidateQueryKeys(queryClient, [
+        ['courses'],
+        ['course', variables.courseId],
       ])
     },
     onError: () => {
@@ -104,9 +105,9 @@ export default function CoursesPage() {
     mutationFn: (courseId: string) => courseService.joinCourse(courseId),
     onSuccess: async () => {
       uiMessage.success('已加入课程')
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['courses'] }),
-        queryClient.invalidateQueries({ queryKey: ['available-courses'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['courses'],
+        ['available-courses'],
       ])
     },
     onError: () => {

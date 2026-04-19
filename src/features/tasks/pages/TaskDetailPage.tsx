@@ -15,6 +15,7 @@ import { uiMessage } from '@/shared/components/feedback/message'
 import { ROUTES } from '@/shared/constants/routes'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
+import { invalidateQueryKeys } from '@/shared/utils/invalidate-query-keys'
 
 function supportsQuestionPreview(taskType: TaskDetail['type']) {
   return taskType === 'homework' || taskType === 'quiz'
@@ -64,10 +65,10 @@ export default function TaskDetailPage() {
     onSuccess: async () => {
       uiMessage.success('评分已保存')
       setGradingTarget(null)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['task', id] }),
-        queryClient.invalidateQueries({ queryKey: ['task-submissions', id] }),
-        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      await invalidateQueryKeys(queryClient, [
+        ['task', id],
+        ['task-submissions', id],
+        ['tasks'],
       ])
     },
     onError: () => {
@@ -169,10 +170,10 @@ export default function TaskDetailPage() {
               onSubmit={async (values) => {
                 await taskService.submitTask(id, values)
                 uiMessage.success('任务提交成功')
-                await Promise.all([
-                  queryClient.invalidateQueries({ queryKey: ['task', id] }),
-                  queryClient.invalidateQueries({ queryKey: ['task-submission', id] }),
-                  queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+                await invalidateQueryKeys(queryClient, [
+                  ['task', id],
+                  ['task-submission', id],
+                  ['tasks'],
                 ])
               }}
             />
