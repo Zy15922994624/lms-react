@@ -27,8 +27,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      assetsInlineLimit: 2048,
       rollupOptions: {
         output: {
+          chunkFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: (assetInfo) => {
+            const name = assetInfo.name ?? ''
+            if (/\.(png|jpe?g|webp|avif|gif|svg)$/i.test(name)) {
+              return 'assets/images/[name]-[hash][extname]'
+            }
+            if (/\.css$/i.test(name)) {
+              return 'assets/styles/[name]-[hash][extname]'
+            }
+            return 'assets/[name]-[hash][extname]'
+          },
           manualChunks(id) {
             if (!id.includes('node_modules')) {
               return
@@ -37,7 +49,8 @@ export default defineConfig(({ mode }) => {
             if (
               id.includes('/react/') ||
               id.includes('/react-dom/') ||
-              id.includes('/react-router-dom/')
+              id.includes('/react-router-dom/') ||
+              id.includes('/react-router/')
             ) {
               return 'vendor-react'
             }

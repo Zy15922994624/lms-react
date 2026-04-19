@@ -73,6 +73,9 @@ export default function CourseResourcesPreviewPanel({
               <img
                 src={selectedResource.fileUrl}
                 alt={selectedResource.title}
+                loading="lazy"
+                decoding="async"
+                fetchPriority="low"
                 className="h-[280px] w-full object-cover transition duration-300 group-hover:scale-[1.02]"
               />
             </button>

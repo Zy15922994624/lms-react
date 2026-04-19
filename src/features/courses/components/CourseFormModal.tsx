@@ -143,6 +143,9 @@ export default function CourseFormModal({
                       : `/${coverPreview}`
                   }
                   alt="课程封面预览"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                   className="h-[180px] w-full object-cover"
                 />
               </div>

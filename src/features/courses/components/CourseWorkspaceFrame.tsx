@@ -103,6 +103,9 @@ export default function CourseWorkspaceFrame({
                   <img
                     src={coverImageUrl}
                     alt={`${course.title} 课程封面`}
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                     className="h-[220px] w-full object-cover sm:h-[240px] 2xl:h-[280px]"
                   />
                 </div>

@@ -97,6 +97,9 @@ export default function CourseResourceImagePreviewModal({
             src={selectedResource.fileUrl}
             alt={selectedResource.title}
             draggable={false}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="max-w-[min(92vw,1520px)] object-contain select-none"
             style={{
               transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageScale})`,
