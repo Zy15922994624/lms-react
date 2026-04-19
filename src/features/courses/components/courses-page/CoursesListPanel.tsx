@@ -4,6 +4,7 @@ import { MoreOutlined } from '@ant-design/icons'
 import type { RefObject } from 'react'
 import type { CourseSummary } from '@/features/courses/types/course'
 import { formatUpdatedAt } from '@/features/courses/components/courses-page/utils'
+import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface CoursesListPanelProps {
   isLoading: boolean
@@ -56,7 +57,13 @@ export default function CoursesListPanel({
               key={course.id}
               role="button"
               tabIndex={0}
-              onClick={() => onOpenCourse(course.id)}
+              onClick={() => {
+                if (hasActiveTextSelection()) {
+                  return
+                }
+
+                onOpenCourse(course.id)
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()

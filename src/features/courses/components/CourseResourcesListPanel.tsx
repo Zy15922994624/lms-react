@@ -15,6 +15,7 @@ import {
 import { courseResourceService } from '@/features/courses/services/course-resource.service'
 import type { CourseResource } from '@/features/courses/types/course-resource'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
+import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface CourseResourcesListPanelProps {
   canManageResources: boolean
@@ -157,7 +158,13 @@ export default function CourseResourcesListPanel({
                   key={resource.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => onSelectResource(resource.id)}
+                  onClick={() => {
+                    if (hasActiveTextSelection()) {
+                      return
+                    }
+
+                    onSelectResource(resource.id)
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()

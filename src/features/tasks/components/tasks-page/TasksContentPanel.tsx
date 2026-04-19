@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Button, Dropdown, Empty, Pagination, Table, Tag } from 'antd'
 import type { MenuProps } from 'antd'
 import type { TablePaginationConfig } from 'antd/es/table'
@@ -13,6 +13,7 @@ import {
 } from '@/features/tasks/constants/task-ui'
 import type { TaskItem } from '@/features/tasks/types/task'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
+import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface TasksContentPanelProps {
   isMobile: boolean
@@ -43,6 +44,17 @@ export default function TasksContentPanel({
   onTaskTableChange,
   onMobilePageChange,
 }: TasksContentPanelProps) {
+  const handleOpenTaskDetail = useCallback(
+    (taskId: string) => {
+      if (hasActiveTextSelection()) {
+        return
+      }
+
+      onOpenTaskDetail(taskId)
+    },
+    [onOpenTaskDetail],
+  )
+
   const taskColumns = useMemo<ColumnsType<TaskItem>>(
     () => [
       {
@@ -63,7 +75,7 @@ export default function TasksContentPanel({
             <button
               type="button"
               className="line-clamp-1 text-left text-sm font-medium text-stone-900 transition hover:text-orange-600"
-              onClick={() => onOpenTaskDetail(record.id)}
+              onClick={() => handleOpenTaskDetail(record.id)}
             >
               {value}
             </button>
@@ -126,7 +138,7 @@ export default function TasksContentPanel({
               render: (_value: unknown, record: TaskItem) => (
                 <Button
                   type={isStudentTaskPending(record) ? 'primary' : 'link'}
-                  onClick={() => onOpenTaskDetail(record.id)}
+                  onClick={() => handleOpenTaskDetail(record.id)}
                 >
                   {getStudentActionLabel(record)}
                 </Button>
@@ -134,7 +146,7 @@ export default function TasksContentPanel({
             },
           ]),
     ],
-    [actionItems, isTeacherView, onOpenTaskDetail],
+    [actionItems, handleOpenTaskDetail, isTeacherView],
   )
 
   return (
@@ -159,7 +171,7 @@ export default function TasksContentPanel({
                 <button
                   type="button"
                   className="text-left text-sm font-medium leading-6 text-stone-900"
-                  onClick={() => onOpenTaskDetail(task.id)}
+                  onClick={() => handleOpenTaskDetail(task.id)}
                 >
                   {task.title}
                 </button>
@@ -174,14 +186,14 @@ export default function TasksContentPanel({
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   {isTeacherView ? (
-                    <Button size="small" onClick={() => onOpenTaskDetail(task.id)}>
+                    <Button size="small" onClick={() => handleOpenTaskDetail(task.id)}>
                       查看详情
                     </Button>
                   ) : (
                     <Button
                       size="small"
                       type={isStudentTaskPending(task) ? 'primary' : 'default'}
-                      onClick={() => onOpenTaskDetail(task.id)}
+                      onClick={() => handleOpenTaskDetail(task.id)}
                     >
                       {getStudentActionLabel(task)}
                     </Button>

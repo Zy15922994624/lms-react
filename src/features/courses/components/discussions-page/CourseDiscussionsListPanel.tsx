@@ -7,6 +7,7 @@ import {
   formatDateLabel,
   shouldFetchNextPage,
 } from '@/features/courses/components/discussions-page/utils'
+import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface CourseDiscussionsListPanelProps {
   totalDiscussions: number
@@ -100,7 +101,13 @@ export default function CourseDiscussionsListPanel({
                   <button
                     key={discussion.id}
                     type="button"
-                    onClick={() => onSelectDiscussion(discussion.id)}
+                    onClick={() => {
+                      if (hasActiveTextSelection()) {
+                        return
+                      }
+
+                      onSelectDiscussion(discussion.id)
+                    }}
                     className={[
                       'w-full rounded-[28px] border px-5 py-5 text-left transition',
                       active
