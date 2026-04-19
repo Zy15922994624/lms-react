@@ -5,25 +5,30 @@ import {
   DatePicker,
   Form,
   Input,
-  Modal,
   Radio,
   Segmented,
   Select,
   Switch,
-  Table,
-  Tag,
   Upload,
 } from 'antd'
-import type { TableColumnsType } from 'antd'
-import type { UploadFile } from 'antd/es/upload/interface'
 import dayjs from 'dayjs'
 import { courseService } from '@/features/courses/services/course.service'
 import { courseResourceService } from '@/features/courses/services/course-resource.service'
 import { questionBankService } from '@/features/question-bank/services/question-bank.service'
 import type { QuestionBankItem, QuestionType } from '@/features/question-bank/types/question-bank'
 import type { CourseSummary } from '@/features/courses/types/course'
-import type { TaskDetail, TaskFile, TaskFormValues, TaskType } from '@/features/tasks/types/task'
-import { uploadService } from '@/shared/api/upload.service'
+import type { TaskDetail, TaskFormValues, TaskType } from '@/features/tasks/types/task'
+import {
+  supportsQuestionSelection,
+  taskTypeOptions,
+} from '@/features/tasks/components/task-form/constants'
+import {
+  type AttachmentUploadFile,
+  toUploadFileList,
+  uploadAttachments,
+} from '@/features/tasks/components/task-form/attachments'
+import TaskQuestionSelectionSection from '@/features/tasks/components/task-form/TaskQuestionSelectionSection'
+import TaskQuestionPickerModal from '@/features/tasks/components/task-form/TaskQuestionPickerModal'
 import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 
@@ -35,64 +40,6 @@ interface TaskFormCardProps {
   enableDraftQuestionSelection?: boolean
   onSubmit: (values: TaskFormValues, questionBankIds?: string[]) => Promise<void>
   onCancel: () => void
-}
-
-type AttachmentUploadFile = UploadFile & { taskFile?: TaskFile }
-
-const taskTypeOptions: Array<{ label: string; value: TaskType }> = [
-  { label: '作业', value: 'homework' },
-  { label: '测验', value: 'quiz' },
-  { label: '项目', value: 'project' },
-  { label: '阅读', value: 'reading' },
-]
-
-const questionTypeLabelMap: Record<QuestionType, string> = {
-  single_choice: '单选题',
-  multi_choice: '多选题',
-  fill_text: '填空题',
-  rich_text: '简答题',
-}
-
-function supportsQuestionSelection(taskType: TaskType) {
-  return taskType === 'homework' || taskType === 'quiz'
-}
-
-function toUploadFileList(attachments: TaskFile[] = []): AttachmentUploadFile[] {
-  return attachments.map((attachment, index) => ({
-    uid: `${attachment.key}-${index}`,
-    name: attachment.name || attachment.originalName,
-    status: 'done',
-    url: attachment.url,
-    taskFile: attachment,
-  }))
-}
-
-async function uploadAttachments(files: AttachmentUploadFile[]) {
-  const result: TaskFile[] = []
-
-  for (const file of files) {
-    if (file.taskFile) {
-      result.push(file.taskFile)
-      continue
-    }
-
-    const rawFile = file.originFileObj
-    if (!rawFile) {
-      continue
-    }
-
-    const uploaded = await uploadService.uploadSingle(rawFile, 'attachment')
-    result.push({
-      key: uploaded.key,
-      url: uploaded.url,
-      originalName: uploaded.originalName,
-      size: uploaded.size,
-      mimeType: uploaded.mimeType,
-      name: rawFile.name,
-    })
-  }
-
-  return result
 }
 
 export default function TaskFormCard({
@@ -185,63 +132,6 @@ export default function TaskFormCard({
       alreadyAdded: currentIds.has(item.id),
     }))
   }, [bankPage?.items, draftQuestionRows])
-
-  const draftQuestionColumns = useMemo<TableColumnsType<QuestionBankItem>>(
-    () => [
-      {
-        title: '题目',
-        dataIndex: 'title',
-        key: 'title',
-        render: (value: string, record) => (
-          <div className="min-w-0">
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <Tag>{questionTypeLabelMap[record.type]}</Tag>
-              <span className="text-xs text-stone-400">分值：{record.score} 分</span>
-            </div>
-            <div className="text-sm font-medium text-stone-900">{value}</div>
-          </div>
-        ),
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        width: 88,
-        render: (_value, record) => (
-          <Button
-            size="small"
-            danger
-            type="text"
-            onClick={() => {
-              setDraftQuestionRows((current) => current.filter((item) => item.id !== record.id))
-            }}
-          >
-            移除
-          </Button>
-        ),
-      },
-    ],
-    [],
-  )
-
-  const pickerColumns = useMemo<TableColumnsType<QuestionBankItem & { alreadyAdded: boolean }>>(
-    () => [
-      {
-        title: '题目',
-        dataIndex: 'title',
-        key: 'title',
-        render: (value: string, record) => (
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-stone-900">{value}</div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-400">
-              <span>{questionTypeLabelMap[record.type]}</span>
-              <span>分值：{record.score}</span>
-            </div>
-          </div>
-        ),
-      },
-    ],
-    [],
-  )
 
   useEffect(() => {
     if (!task) {
@@ -422,35 +312,19 @@ export default function TaskFormCard({
             </div>
 
             {shouldPickQuestions ? (
-              <section className="rounded-[20px] border border-[rgba(255,107,53,0.14)] bg-[rgba(255,107,53,0.04)] px-4 py-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      if (!selectedCourseId) {
-                        uiMessage.warning('请先选择课程，再添加题目')
-                        return
-                      }
-                      setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
-                      setIsPickerOpen(true)
-                    }}
-                  >
-                    添加题目
-                  </Button>
-                </div>
-
-                <div className="mt-4">
-                  <Table<QuestionBankItem>
-                    rowKey="id"
-                    size="small"
-                    dataSource={draftQuestionRows}
-                    columns={draftQuestionColumns}
-                    pagination={false}
-                    locale={{ emptyText: '请先添加题目' }}
-                    scroll={{ x: 520 }}
-                  />
-                </div>
-              </section>
+              <TaskQuestionSelectionSection
+                selectedCourseId={selectedCourseId}
+                draftQuestionRows={draftQuestionRows}
+                onOpenPicker={() => {
+                  setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
+                  setIsPickerOpen(true)
+                }}
+                onRemoveQuestion={(questionId) => {
+                  setDraftQuestionRows((current) =>
+                    current.filter((item) => item.id !== questionId),
+                  )
+                }}
+              />
             ) : null}
 
             {assignmentMode === 'selected' ? (
@@ -518,14 +392,22 @@ export default function TaskFormCard({
         </Form>
       </section>
 
-      <Modal
+      <TaskQuestionPickerModal
         open={isPickerOpen}
-        title="添加题目"
-          width={isMobile ? mobileModalWidth : 880}
-        okText="加入列表"
-        cancelText="取消"
+        isMobile={isMobile}
+        mobileModalWidth={mobileModalWidth}
+        selectedCourseId={selectedCourseId}
+        isBankLoading={isBankLoading}
+        availableQuestionRows={availableQuestionRows}
+        questionSearchInput={questionSearchInput}
+        setQuestionSearchInput={setQuestionSearchInput}
+        setQuestionSearchKeyword={setQuestionSearchKeyword}
+        questionFilterType={questionFilterType}
+        setQuestionFilterType={setQuestionFilterType}
+        modalSelectedRowKeys={modalSelectedRowKeys}
+        setModalSelectedRowKeys={setModalSelectedRowKeys}
         onCancel={() => setIsPickerOpen(false)}
-        onOk={() => {
+        onConfirm={() => {
           const selectedSet = new Set(modalSelectedRowKeys)
           const merged = new Map(draftQuestionRows.map((item) => [item.id, item]))
           for (const item of bankPage?.items ?? []) {
@@ -541,47 +423,7 @@ export default function TaskFormCard({
             uiMessage.warning(`当前题目总分为 ${nextTotalScore} 分，请继续调整到 100 分`)
           }
         }}
-      >
-        <div className="mb-4 flex flex-col gap-3 md:flex-row">
-          <Input.Search
-            placeholder="搜索题目"
-            value={questionSearchInput}
-            onChange={(event) => setQuestionSearchInput(event.target.value)}
-            onSearch={(value) => setQuestionSearchKeyword(value.trim())}
-            allowClear
-          />
-          <Select
-            className="md:w-40"
-            value={questionFilterType}
-            options={[
-              { label: '全部题型', value: 'all' },
-              { label: '单选题', value: 'single_choice' },
-              { label: '多选题', value: 'multi_choice' },
-              { label: '填空题', value: 'fill_text' },
-              { label: '简答题', value: 'rich_text' },
-            ]}
-            onChange={(value) => setQuestionFilterType(value)}
-          />
-        </div>
-
-        <Table<QuestionBankItem & { alreadyAdded: boolean }>
-          rowKey="id"
-          size="small"
-          loading={isBankLoading}
-          dataSource={availableQuestionRows}
-          columns={pickerColumns}
-          pagination={false}
-          rowSelection={{
-            selectedRowKeys: modalSelectedRowKeys,
-            onChange: (nextKeys) => setModalSelectedRowKeys(nextKeys.map(String)),
-            preserveSelectedRowKeys: true,
-          }}
-          locale={{ emptyText: selectedCourseId ? '当前课程下没有可选题目' : '请先选择课程' }}
-          scroll={{ x: 640 }}
-        />
-
-        <div className="mt-3 text-xs text-stone-400">已选 {modalSelectedRowKeys.length} 题</div>
-      </Modal>
+      />
     </>
   )
 }
