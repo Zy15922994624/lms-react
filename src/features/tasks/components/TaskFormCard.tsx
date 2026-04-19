@@ -1,33 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Button,
-  DatePicker,
-  Form,
-  Input,
-  Radio,
-  Segmented,
-  Select,
-  Switch,
-  Upload,
-} from 'antd'
+import { Button, Form } from 'antd'
 import dayjs from 'dayjs'
+import type { CourseSummary } from '@/features/courses/types/course'
 import { courseService } from '@/features/courses/services/course.service'
 import { courseResourceService } from '@/features/courses/services/course-resource.service'
 import { questionBankService } from '@/features/question-bank/services/question-bank.service'
 import type { QuestionBankItem, QuestionType } from '@/features/question-bank/types/question-bank'
-import type { CourseSummary } from '@/features/courses/types/course'
 import type { TaskDetail, TaskFormValues, TaskType } from '@/features/tasks/types/task'
-import {
-  supportsQuestionSelection,
-  taskTypeOptions,
-} from '@/features/tasks/components/task-form/constants'
+import { supportsQuestionSelection } from '@/features/tasks/components/task-form/constants'
+import TaskFormAdvancedSection from '@/features/tasks/components/task-form/TaskFormAdvancedSection'
 import {
   type AttachmentUploadFile,
   toUploadFileList,
   uploadAttachments,
 } from '@/features/tasks/components/task-form/attachments'
-import TaskQuestionSelectionSection from '@/features/tasks/components/task-form/TaskQuestionSelectionSection'
+import TaskFormBaseSection from '@/features/tasks/components/task-form/TaskFormBaseSection'
 import TaskQuestionPickerModal from '@/features/tasks/components/task-form/TaskQuestionPickerModal'
 import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
@@ -207,8 +195,7 @@ export default function TaskFormCard({
     setUploading(true)
     try {
       const attachments = await uploadAttachments(attachmentFileList)
-      const isPublishedValue =
-        typeof values.isPublished === 'boolean' ? values.isPublished : true
+      const isPublishedValue = typeof values.isPublished === 'boolean' ? values.isPublished : true
 
       await onSubmit(
         {
@@ -243,142 +230,28 @@ export default function TaskFormCard({
       <section className="app-panel overflow-hidden border border-[rgba(28,25,23,0.06)] bg-white">
         <Form form={form} layout="vertical" onFinish={handleFinish} className="space-y-0">
           <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6 xl:px-7">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Form.Item
-                label="所属课程"
-                name="courseId"
-                rules={[{ required: true, message: '请选择课程' }]}
-                className="!mb-0"
-              >
-                <Select
-                  placeholder="选择课程"
-                  options={courses.map((course) => ({
-                    label: course.title,
-                    value: course.id,
-                  }))}
-                  disabled={mode === 'edit'}
-                />
-              </Form.Item>
+            <TaskFormBaseSection mode={mode} courses={courses} />
 
-              <Form.Item
-                label="任务类型"
-                name="type"
-                rules={[{ required: true, message: '请选择任务类型' }]}
-                className="!mb-0"
-              >
-                <Segmented block options={taskTypeOptions} />
-              </Form.Item>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <Form.Item
-                label="任务标题"
-                name="title"
-                rules={[{ required: true, message: '请输入任务标题' }]}
-                className="!mb-0"
-              >
-                <Input placeholder="输入任务标题" maxLength={100} />
-              </Form.Item>
-            </div>
-
-            <Form.Item label="任务说明" name="description" className="!mb-0">
-              <Input.TextArea rows={4} placeholder="补充任务要求" maxLength={4000} />
-            </Form.Item>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-              <Form.Item
-                label="截止时间"
-                name="dueDate"
-                rules={[{ required: true, message: '请选择截止时间' }]}
-                className="!mb-0"
-              >
-                <DatePicker showTime className="w-full" />
-              </Form.Item>
-
-              <Form.Item label="分配范围" name="assignmentMode" className="!mb-0">
-                <Radio.Group optionType="button" buttonStyle="solid" className="w-full">
-                  <Radio.Button value="all">全班</Radio.Button>
-                  <Radio.Button value="selected">定向</Radio.Button>
-                </Radio.Group>
-              </Form.Item>
-
-              <Form.Item label="发布状态" className="!mb-0">
-                <div className="flex h-[54px] items-center rounded-[14px] border border-[rgba(28,25,23,0.08)] px-4">
-                  <Form.Item name="isPublished" valuePropName="checked" noStyle>
-                    <Switch checkedChildren="发布" unCheckedChildren="草稿" />
-                  </Form.Item>
-                </div>
-              </Form.Item>
-            </div>
-
-            {shouldPickQuestions ? (
-              <TaskQuestionSelectionSection
-                selectedCourseId={selectedCourseId}
-                draftQuestionRows={draftQuestionRows}
-                onOpenPicker={() => {
-                  setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
-                  setIsPickerOpen(true)
-                }}
-                onRemoveQuestion={(questionId) => {
-                  setDraftQuestionRows((current) =>
-                    current.filter((item) => item.id !== questionId),
-                  )
-                }}
-              />
-            ) : null}
-
-            {assignmentMode === 'selected' ? (
-              <Form.Item
-                label="指定学生"
-                name="assignedStudentIds"
-                rules={[{ required: true, message: '请至少选择一名学生' }]}
-                className="!mb-0"
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="选择学生"
-                  options={studentOptions}
-                  loading={Boolean(selectedCourseId) && !courseStudents}
-                />
-              </Form.Item>
-            ) : null}
-
-            {selectedType === 'reading' ? (
-              <Form.Item label="关联资源" name="relatedResourceIds" className="!mb-0">
-                <Select
-                  mode="multiple"
-                  placeholder="选择资源"
-                  options={resourceOptions}
-                  loading={Boolean(selectedCourseId) && !resourcesPage}
-                />
-              </Form.Item>
-            ) : null}
-
-            <Form.Item label="任务附件" className="!mb-0">
-              <Upload
-                multiple
-                fileList={attachmentFileList}
-                beforeUpload={(file) => {
-                  setAttachmentFileList((current) => [
-                    ...current,
-                    {
-                      uid: `${file.uid}-${Date.now()}`,
-                      name: file.name,
-                      status: 'done',
-                      originFileObj: file,
-                    },
-                  ])
-                  return false
-                }}
-                onRemove={(file) => {
-                  setAttachmentFileList((current) =>
-                    current.filter((item) => item.uid !== file.uid),
-                  )
-                }}
-              >
-                <Button>选择附件</Button>
-              </Upload>
-            </Form.Item>
+            <TaskFormAdvancedSection
+              shouldPickQuestions={shouldPickQuestions}
+              selectedCourseId={selectedCourseId}
+              draftQuestionRows={draftQuestionRows}
+              assignmentMode={assignmentMode}
+              selectedType={selectedType}
+              studentOptions={studentOptions}
+              resourceOptions={resourceOptions}
+              hasCourseStudents={Boolean(courseStudents)}
+              hasResourcesPage={Boolean(resourcesPage)}
+              attachmentFileList={attachmentFileList}
+              setAttachmentFileList={setAttachmentFileList}
+              onOpenPicker={() => {
+                setModalSelectedRowKeys(draftQuestionRows.map((item) => item.id))
+                setIsPickerOpen(true)
+              }}
+              onRemoveQuestion={(questionId) => {
+                setDraftQuestionRows((current) => current.filter((item) => item.id !== questionId))
+              }}
+            />
           </div>
 
           <div className="sticky bottom-0 z-10 border-t border-[rgba(28,25,23,0.06)] bg-white/92 px-5 py-4 backdrop-blur sm:px-6 xl:px-7">
