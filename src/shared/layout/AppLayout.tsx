@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Drawer, Dropdown, Grid, Layout, Menu, Typography } from 'antd'
 import {
@@ -10,7 +10,6 @@ import {
 } from '@ant-design/icons'
 import { ROUTES } from '@/shared/constants/routes'
 import { useAuthStore } from '@/features/auth/store/auth.store'
-import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { uiMessage } from '@/shared/components/feedback/message'
 import PageContainer from '@/shared/layout/PageContainer'
 import { resolvePageWidthMode } from '@/shared/layout/page-width'
@@ -18,6 +17,9 @@ import type { UserRole } from '@/shared/types/user'
 
 const { Content, Header, Sider } = Layout
 const { useBreakpoint } = Grid
+const NotificationBell = lazy(
+  () => import('@/features/notifications/components/NotificationBell'),
+)
 
 const roleLabelMap: Record<UserRole, string> = {
   admin: '管理员',
@@ -234,7 +236,11 @@ export default function AppLayout() {
             </div>
 
             <div className="flex items-center gap-3">
-              {hasRole(['student']) ? <NotificationBell /> : null}
+              {hasRole(['student']) ? (
+                <Suspense fallback={null}>
+                  <NotificationBell />
+                </Suspense>
+              ) : null}
               <Dropdown
                 menu={{ items: userMenuItems, onClick: handleMenuClick }}
                 trigger={['click']}
