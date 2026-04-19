@@ -1,36 +1,22 @@
-﻿import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef } from 'react'
-import { Button, Dropdown, Empty, Input, Modal, Segmented } from 'antd'
+import { Modal } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import CourseFormModal from '@/features/courses/components/CourseFormModal'
+import CoursesToolbar, {
+  type FilterValue,
+} from '@/features/courses/components/courses-page/CoursesToolbar'
+import CoursesListPanel from '@/features/courses/components/courses-page/CoursesListPanel'
+import CoursesFocusAside from '@/features/courses/components/courses-page/CoursesFocusAside'
 import { courseService } from '@/features/courses/services/course.service'
 import type { CourseDetail, CourseFormValues, CourseSummary } from '@/features/courses/types/course'
 import { useAuthStore } from '@/features/auth/store/auth.store'
 import { uiMessage } from '@/shared/components/feedback/message'
 import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
-import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 
-type FilterValue = 'all' | 'active' | 'archived'
 const EMPTY_COURSES: CourseSummary[] = []
-
-function formatUpdatedAt(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return '-'
-  }
-
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date)
-}
 
 export default function CoursesPage() {
   const navigate = useNavigate()
@@ -161,13 +147,11 @@ export default function CoursesPage() {
     () => visibleCourses.slice(0, visibleCount),
     [visibleCourses, visibleCount],
   )
-
   const hasMoreCourses = displayedCourses.length < visibleCourses.length
 
   useEffect(() => {
     const root = listScrollRef.current
     const target = listSentinelRef.current
-
     if (!root || !target || !hasMoreCourses) {
       return
     }
@@ -189,7 +173,6 @@ export default function CoursesPage() {
     )
 
     observer.observe(target)
-
     return () => observer.disconnect()
   }, [hasMoreCourses, visibleCourses.length])
 
@@ -212,7 +195,6 @@ export default function CoursesPage() {
     }
 
     if (!currentCourse) return
-
     await updateCourseMutation.mutateAsync({
       courseId: currentCourse.id,
       values,
@@ -242,244 +224,55 @@ export default function CoursesPage() {
     },
   ]
 
-  const focusAside = canManageCourses ? (
-    <div className={`app-panel ${workspacePanelPadding.asideWarm}`}>
-      <div className="app-section-heading">
-        <h2 className="app-section-title">最近更新</h2>
-      </div>
-      <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
-        {recentCourses.map((course) => (
-          <button
-            type="button"
-            key={course.id}
-            onClick={() => navigate(`/courses/${course.id}`)}
-            className="w-full rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-3 text-left transition hover:border-[rgba(255,107,53,0.18)]"
-          >
-            <div className="text-sm font-medium leading-6 text-stone-900">{course.title}</div>
-            <div className="mt-1 text-xs leading-5 text-stone-500">
-              {course.teacherName} · 更新于 {formatUpdatedAt(course.updatedAt)}
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  ) : (
-    <div className={`app-panel ${workspacePanelPadding.asideWarm}`}>
-      <div className="app-section-heading">
-        <h2 className="app-section-title">可加入课程</h2>
-      </div>
-      <Input.Search
-        placeholder="搜索课程名或课程代码"
-        allowClear
-        value={joinKeyword}
-        onChange={(event) => setJoinKeyword(event.target.value)}
-        className="mb-4"
-      />
-      <div className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
-        {!isAvailableCoursesLoading && availableCourses.length === 0 ? (
-          <Empty description="暂无可加入课程" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        ) : null}
-
-        {availableCourses.map((course) => (
-          <div
-            key={course.id}
-            className="rounded-[18px] border border-[rgba(28,25,23,0.06)] bg-white/94 px-4 py-3"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium leading-6 text-stone-900">
-                  {course.title}
-                </div>
-                <div className="mt-1 text-xs leading-5 text-stone-500">
-                  {course.teacherName}
-                  {course.courseCode ? ` · ${course.courseCode}` : ''}
-                </div>
-              </div>
-              <Button
-                type="primary"
-                size="small"
-                loading={joinCourseMutation.isPending && joinCourseMutation.variables === course.id}
-                onClick={() => joinCourseMutation.mutate(course.id)}
-              >
-                加入
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-
   return (
     <div className="app-page">
       <WorkspaceLayout
         preset="dashboard"
-        aside={focusAside}
+        aside={
+          <CoursesFocusAside
+            canManageCourses={canManageCourses}
+            recentCourses={recentCourses}
+            availableCourses={availableCourses}
+            joinKeyword={joinKeyword}
+            isAvailableCoursesLoading={isAvailableCoursesLoading}
+            joiningCourseId={
+              joinCourseMutation.isPending ? String(joinCourseMutation.variables ?? '') : undefined
+            }
+            onJoinKeywordChange={setJoinKeyword}
+            onOpenCourse={(courseId) => navigate(`/courses/${courseId}`)}
+            onJoinCourse={(courseId) => joinCourseMutation.mutate(courseId)}
+          />
+        }
         mainClassName="app-panel overflow-hidden"
       >
-        <div className="flex flex-col gap-4 border-b border-[var(--lms-color-border)] px-6 py-5 sm:px-8 xl:flex-row xl:items-center xl:justify-between xl:px-9 xl:py-6 2xl:px-10">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-[-0.03em] text-stone-900">课程</h1>
-            <div className="mt-1 text-sm text-stone-500">
-              {isStudentView ? `已加入 ${courses.length} 门课程` : `共 ${courses.length} 门课程`}
-            </div>
-          </div>
+        <CoursesToolbar
+          isStudentView={isStudentView}
+          coursesCount={courses.length}
+          searchKeyword={searchKeyword}
+          filter={filter}
+          canManageCourses={canManageCourses}
+          onSearchKeywordChange={(value) => {
+            setSearchKeyword(value)
+            setVisibleCount(10)
+          }}
+          onFilterChange={(value) => {
+            setFilter(value)
+            setVisibleCount(10)
+          }}
+          onOpenCreateModal={openCreateModal}
+        />
 
-          <div className="flex flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
-            <Input
-              allowClear
-              value={searchKeyword}
-              onChange={(event) => {
-                setSearchKeyword(event.target.value)
-                setVisibleCount(10)
-              }}
-              placeholder="搜索课程名、教师或课程代码"
-              className="xl:w-[280px] 2xl:w-[320px]"
-            />
-            <Segmented
-              value={filter}
-              onChange={(value) => {
-                setFilter(value as FilterValue)
-                setVisibleCount(10)
-              }}
-              options={[
-                { label: '全部', value: 'all' },
-                { label: '进行中', value: 'active' },
-                { label: '已归档', value: 'archived' },
-              ]}
-            />
-            {canManageCourses ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-                创建课程
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <section className="overflow-hidden">
-          <div className="hidden grid-cols-[minmax(0,1.8fr)_140px_120px_120px_120px_120px_64px] gap-4 border-b border-[var(--lms-color-border)] px-6 py-3 text-xs font-medium tracking-[0.08em] text-stone-400 md:grid xl:px-9 2xl:px-10">
-            <div>课程</div>
-            <div>教师</div>
-            <div>成员</div>
-            <div>任务</div>
-            <div>状态</div>
-            <div>更新</div>
-            <div />
-          </div>
-
-          <div
-            ref={listScrollRef}
-            className="max-h-[560px] overflow-y-auto overscroll-contain md:max-h-[620px]"
-          >
-            <div className="divide-y divide-[var(--lms-color-border)]">
-              {!isLoading && visibleCourses.length === 0 ? (
-                <div className="px-6 py-10 sm:px-8 xl:px-9 2xl:px-10">
-                  <Empty description="暂无课程" />
-                </div>
-              ) : null}
-
-              {displayedCourses.map((course) => (
-                <div
-                  key={course.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/courses/${course.id}`)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      navigate(`/courses/${course.id}`)
-                    }
-                  }}
-                  className="group cursor-pointer px-6 py-5 transition hover:bg-[#fffaf6] focus-visible:bg-[#fffaf6] focus-visible:outline-none sm:px-8 xl:px-9 2xl:px-10"
-                >
-                  <div className="flex items-start justify-between gap-3 md:hidden">
-                    <div className="min-w-0">
-                      <div className="truncate text-base font-semibold text-stone-900">
-                        {course.title}
-                      </div>
-                      <div className="mt-1 text-sm text-stone-500">
-                        {course.teacherName}
-                        {course.courseCode ? ` · ${course.courseCode}` : ''}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-stone-500">
-                        <span>{course.studentCount} 人</span>
-                        <span>{course.taskCount} 个任务</span>
-                        <span>{course.isArchived ? '已归档' : '进行中'}</span>
-                        <span>{formatUpdatedAt(course.updatedAt)}</span>
-                      </div>
-                    </div>
-                    {canManageCourses ? (
-                      <div
-                        onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      >
-                        <Dropdown menu={{ items: actionItems(course) }} trigger={['click']}>
-                          <Button icon={<MoreOutlined />} type="text" shape="circle" />
-                        </Dropdown>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="hidden items-center gap-4 md:grid md:grid-cols-[minmax(0,1.8fr)_140px_120px_120px_120px_120px_64px]">
-                    <div className="min-w-0">
-                      <div className="truncate text-base font-semibold text-stone-900 transition group-hover:text-orange-600">
-                        {course.title}
-                      </div>
-                      <div className="mt-1 truncate text-sm text-stone-500">
-                        {course.courseCode ?? course.semester ?? '—'}
-                      </div>
-                    </div>
-                    <div className="truncate text-sm text-stone-600">{course.teacherName}</div>
-                    <div className="text-sm text-stone-600">{course.studentCount} 人</div>
-                    <div className="text-sm text-stone-600">{course.taskCount} 个</div>
-                    <div>
-                      <span
-                        className={[
-                          'rounded-full px-2.5 py-1 text-xs font-medium',
-                          course.isArchived
-                            ? 'bg-stone-100 text-stone-500'
-                            : 'bg-emerald-50 text-emerald-600',
-                        ].join(' ')}
-                      >
-                        {course.isArchived ? '已归档' : '进行中'}
-                      </span>
-                    </div>
-                    <div className="text-sm text-stone-500">
-                      {formatUpdatedAt(course.updatedAt)}
-                    </div>
-                    <div className="flex justify-end">
-                      {canManageCourses ? (
-                        <div
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <Dropdown menu={{ items: actionItems(course) }} trigger={['click']}>
-                            <Button
-                              icon={<MoreOutlined />}
-                              type="text"
-                              shape="circle"
-                              className="text-stone-500 transition hover:text-stone-900"
-                            />
-                          </Dropdown>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {!isLoading && displayedCourses.length > 0 ? (
-                <div className="flex items-center justify-center px-6 py-4 text-sm text-stone-400 sm:px-8 xl:px-9 2xl:px-10">
-                  {hasMoreCourses
-                    ? '继续向下滚动加载更多课程'
-                    : `已显示全部 ${visibleCourses.length} 门课程`}
-                </div>
-              ) : null}
-
-              {hasMoreCourses ? <div ref={listSentinelRef} className="h-1 w-full" /> : null}
-            </div>
-          </div>
-        </section>
+        <CoursesListPanel
+          isLoading={isLoading}
+          visibleCourses={visibleCourses}
+          displayedCourses={displayedCourses}
+          hasMoreCourses={hasMoreCourses}
+          canManageCourses={canManageCourses}
+          listScrollRef={listScrollRef}
+          listSentinelRef={listSentinelRef}
+          onOpenCourse={(courseId) => navigate(`/courses/${courseId}`)}
+          actionItems={actionItems}
+        />
       </WorkspaceLayout>
 
       <CourseFormModal
