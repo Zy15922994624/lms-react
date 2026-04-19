@@ -2,6 +2,10 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { io } from 'socket.io-client'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import {
+  notificationPreviewPageSize,
+  notificationQueryKeys,
+} from '@/features/notifications/constants/query-keys'
 import type {
   NotificationItem,
   NotificationsPage,
@@ -38,14 +42,14 @@ export function useNotificationRealtime(enabled: boolean) {
 
     socket.on('notification', (notification: NotificationItem) => {
       queryClient.setQueryData<NotificationUnreadCount | undefined>(
-        ['notifications', 'unread-count'],
+        notificationQueryKeys.unreadCount(),
         (current) => ({
           unreadCount: (current?.unreadCount ?? 0) + 1,
         }),
       )
 
       queryClient.setQueryData<NotificationsPage | undefined>(
-        ['notifications', 'preview', 8],
+        notificationQueryKeys.preview(notificationPreviewPageSize),
         (current) => {
           if (!current || current.items.some((item) => item.id === notification.id)) {
             return current
@@ -53,13 +57,13 @@ export function useNotificationRealtime(enabled: boolean) {
 
           return {
             ...current,
-            items: [notification, ...current.items].slice(0, 8),
+            items: [notification, ...current.items].slice(0, notificationPreviewPageSize),
             total: current.total + 1,
           }
         },
       )
 
-      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     })
 
     return () => {

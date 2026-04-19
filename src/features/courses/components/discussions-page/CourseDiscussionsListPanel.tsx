@@ -1,13 +1,13 @@
 import { MessageOutlined, PlusOutlined } from '@ant-design/icons'
 import { Button, Empty, Input, Spin } from 'antd'
 import type { CourseDiscussionListItem } from '@/features/courses/types/course-discussion'
+import { useSelectionSafeAction } from '@/shared/hooks/useSelectionSafeAction'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
 import {
   formatAuthorName,
   formatDateLabel,
   shouldFetchNextPage,
 } from '@/features/courses/components/discussions-page/utils'
-import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface CourseDiscussionsListPanelProps {
   totalDiscussions: number
@@ -44,6 +44,8 @@ export default function CourseDiscussionsListPanel({
   onSelectDiscussion,
   onFetchNextPage,
 }: CourseDiscussionsListPanelProps) {
+  const runSelectionSafe = useSelectionSafeAction()
+
   return (
     <section className="app-panel overflow-hidden">
       <div className={workspacePanelPadding.blockHeader}>
@@ -101,13 +103,7 @@ export default function CourseDiscussionsListPanel({
                   <button
                     key={discussion.id}
                     type="button"
-                    onClick={() => {
-                      if (hasActiveTextSelection()) {
-                        return
-                      }
-
-                      onSelectDiscussion(discussion.id)
-                    }}
+                    onClick={() => runSelectionSafe(() => onSelectDiscussion(discussion.id))}
                     className={[
                       'w-full rounded-[28px] border px-5 py-5 text-left transition',
                       active

@@ -2,13 +2,15 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/auth.store'
+import {
+  notificationPreviewPageSize,
+  notificationQueryKeys,
+} from '@/features/notifications/constants/query-keys'
 import { useNotificationRealtime } from '@/features/notifications/hooks/useNotificationRealtime'
 import { notificationService } from '@/features/notifications/services/notification.service'
 import type { NotificationItem } from '@/features/notifications/types/notification'
 import { resolveNotificationTargetPath } from '@/features/notifications/utils/notification'
 import { uiMessage } from '@/shared/components/feedback/message'
-
-const previewPageSize = 8
 
 export function useNotificationBellModel() {
   const navigate = useNavigate()
@@ -20,7 +22,7 @@ export function useNotificationBellModel() {
   useNotificationRealtime(isStudent)
 
   const { data: unreadData } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: notificationQueryKeys.unreadCount(),
     queryFn: () => notificationService.getUnreadCount(),
     enabled: isStudent,
     refetchInterval: 60_000,
@@ -31,11 +33,11 @@ export function useNotificationBellModel() {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ['notifications', 'preview', previewPageSize],
+    queryKey: notificationQueryKeys.preview(notificationPreviewPageSize),
     queryFn: () =>
       notificationService.getNotifications({
         page: 1,
-        pageSize: previewPageSize,
+        pageSize: notificationPreviewPageSize,
       }),
     enabled: isStudent && open,
     refetchInterval: open ? 60_000 : false,
@@ -44,7 +46,7 @@ export function useNotificationBellModel() {
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => notificationService.markAsRead(notificationId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
   })
 
@@ -52,7 +54,7 @@ export function useNotificationBellModel() {
     mutationFn: () => notificationService.markAllAsRead(),
     onSuccess: async () => {
       uiMessage.success('已将全部通知标记为已读')
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
     onError: () => {
       uiMessage.error('全部已读操作失败')
@@ -63,7 +65,7 @@ export function useNotificationBellModel() {
     mutationFn: (notificationId: string) => notificationService.deleteNotification(notificationId),
     onSuccess: async () => {
       uiMessage.success('通知已删除')
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
     onError: () => {
       uiMessage.error('删除通知失败')

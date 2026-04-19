@@ -12,8 +12,8 @@ import {
   taskTypeLabelMap,
 } from '@/features/tasks/constants/task-ui'
 import type { TaskItem } from '@/features/tasks/types/task'
+import { useSelectionSafeAction } from '@/shared/hooks/useSelectionSafeAction'
 import { formatDateTime, getDueDateClass } from '@/shared/utils/date'
-import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface TasksContentPanelProps {
   isMobile: boolean
@@ -44,15 +44,13 @@ export default function TasksContentPanel({
   onTaskTableChange,
   onMobilePageChange,
 }: TasksContentPanelProps) {
+  const runSelectionSafe = useSelectionSafeAction()
+
   const handleOpenTaskDetail = useCallback(
     (taskId: string) => {
-      if (hasActiveTextSelection()) {
-        return
-      }
-
-      onOpenTaskDetail(taskId)
+      runSelectionSafe(() => onOpenTaskDetail(taskId))
     },
-    [onOpenTaskDetail],
+    [onOpenTaskDetail, runSelectionSafe],
   )
 
   const taskColumns = useMemo<ColumnsType<TaskItem>>(

@@ -14,8 +14,8 @@ import {
 } from '@/features/courses/constants/course-resource-ui'
 import { courseResourceService } from '@/features/courses/services/course-resource.service'
 import type { CourseResource } from '@/features/courses/types/course-resource'
+import { useSelectionSafeAction } from '@/shared/hooks/useSelectionSafeAction'
 import { workspacePanelPadding } from '@/shared/layout/workspace-tokens'
-import { hasActiveTextSelection } from '@/shared/utils/selection'
 
 interface CourseResourcesListPanelProps {
   canManageResources: boolean
@@ -68,6 +68,8 @@ export default function CourseResourcesListPanel({
   onPaginationChange,
   onPageSizeChange,
 }: CourseResourcesListPanelProps) {
+  const runSelectionSafe = useSelectionSafeAction()
+
   return (
     <div className="app-panel overflow-hidden">
       <div className={`border-b border-[var(--lms-color-border)] ${workspacePanelPadding.section}`}>
@@ -158,13 +160,7 @@ export default function CourseResourcesListPanel({
                   key={resource.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => {
-                    if (hasActiveTextSelection()) {
-                      return
-                    }
-
-                    onSelectResource(resource.id)
-                  }}
+                  onClick={() => runSelectionSafe(() => onSelectResource(resource.id))}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault()

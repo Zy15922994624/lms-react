@@ -4,7 +4,7 @@ import { MoreOutlined } from '@ant-design/icons'
 import type { RefObject } from 'react'
 import type { CourseSummary } from '@/features/courses/types/course'
 import { formatUpdatedAt } from '@/features/courses/components/courses-page/utils'
-import { hasActiveTextSelection } from '@/shared/utils/selection'
+import { useSelectionSafeAction } from '@/shared/hooks/useSelectionSafeAction'
 
 interface CoursesListPanelProps {
   isLoading: boolean
@@ -29,6 +29,8 @@ export default function CoursesListPanel({
   onOpenCourse,
   actionItems,
 }: CoursesListPanelProps) {
+  const runSelectionSafe = useSelectionSafeAction()
+
   return (
     <section className="overflow-hidden">
       <div className="hidden grid-cols-[minmax(0,1.8fr)_140px_120px_120px_120px_120px_64px] gap-4 border-b border-[var(--lms-color-border)] px-6 py-3 text-xs font-medium tracking-[0.08em] text-stone-400 md:grid xl:px-9 2xl:px-10">
@@ -57,13 +59,7 @@ export default function CoursesListPanel({
               key={course.id}
               role="button"
               tabIndex={0}
-              onClick={() => {
-                if (hasActiveTextSelection()) {
-                  return
-                }
-
-                onOpenCourse(course.id)
-              }}
+              onClick={() => runSelectionSafe(() => onOpenCourse(course.id))}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()

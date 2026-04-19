@@ -4,6 +4,10 @@ import { Button, Empty, Pagination, Popconfirm, Select, Table, Tag } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import {
+  notificationQueryKeys,
+  type NotificationReadFilter,
+} from '@/features/notifications/constants/query-keys'
 import { notificationService } from '@/features/notifications/services/notification.service'
 import type {
   NotificationItem,
@@ -20,25 +24,28 @@ import useResponsiveLayout from '@/shared/layout/useResponsiveLayout'
 import WorkspaceLayout from '@/shared/layout/WorkspaceLayout'
 import { formatDateTime } from '@/shared/utils/date'
 
-type ReadFilter = 'all' | 'unread' | 'read'
-
 export default function NotificationsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [typeFilter, setTypeFilter] = useState<NotificationType | undefined>()
-  const [readFilter, setReadFilter] = useState<ReadFilter>('all')
+  const [readFilter, setReadFilter] = useState<NotificationReadFilter>('all')
   const { isMobile } = useResponsiveLayout()
 
   const { data: unreadData } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: notificationQueryKeys.unreadCount(),
     queryFn: () => notificationService.getUnreadCount(),
     refetchInterval: 60_000,
   })
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['notifications', page, pageSize, typeFilter, readFilter],
+    queryKey: notificationQueryKeys.list({
+      page,
+      pageSize,
+      type: typeFilter,
+      readFilter,
+    }),
     queryFn: () =>
       notificationService.getNotifications({
         page,
@@ -52,7 +59,7 @@ export default function NotificationsPage() {
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => notificationService.markAsRead(notificationId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
   })
 
@@ -60,7 +67,7 @@ export default function NotificationsPage() {
     mutationFn: () => notificationService.markAllAsRead(),
     onSuccess: async () => {
       uiMessage.success('已将全部通知标记为已读')
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
     onError: () => {
       uiMessage.error('全部已读操作失败')
@@ -71,7 +78,7 @@ export default function NotificationsPage() {
     mutationFn: (notificationId: string) => notificationService.deleteNotification(notificationId),
     onSuccess: async () => {
       uiMessage.success('通知已删除')
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })
     },
     onError: () => {
       uiMessage.error('删除通知失败')
@@ -191,7 +198,9 @@ export default function NotificationsPage() {
                 <div className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-stone-900">
                   {unreadCount}
                 </div>
-                <div className="mt-2 text-sm text-stone-500">优先处理已过期和即将截止的任务提醒</div>
+                <div className="mt-2 text-sm text-stone-500">
+                  优先处理已过期和即将截止的任务提醒
+                </div>
               </div>
 
               <Button
@@ -207,7 +216,7 @@ export default function NotificationsPage() {
               <Button
                 block
                 icon={<ReloadOutlined />}
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
+                onClick={() => queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all })}
               >
                 刷新通知
               </Button>
@@ -240,7 +249,7 @@ export default function NotificationsPage() {
               ]}
             />
 
-            <Select<ReadFilter>
+            <Select<NotificationReadFilter>
               value={readFilter}
               className="xl:w-[160px]"
               onChange={(value) => {
